@@ -7,8 +7,10 @@ const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
   images: { unoptimized: true },
-  transpilePackages: ["@steward/domain"],
+  transpilePackages: ["@steward/domain", "@steward/ui"],
   poweredByHeader: false,
+  // The floating dev badge covers the account menu in the sidebar. Build errors still show.
+  devIndicators: false,
 };
 
 export default function config(phase: string): NextConfig {

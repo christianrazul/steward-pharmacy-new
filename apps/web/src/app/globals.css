@@ -1,0 +1,9 @@
+@import "@steward/ui/globals.css";
+
+/*
+ * Desktop sidebar collapse. <html data-sidebar="collapsed"> is set before first
+ * paint (see lib/sidebar-collapse.ts). The rail is marked [data-sidebar-rail], so
+ * the mobile sheet, which reuses the same contents, always shows them expanded.
+ */
+@custom-variant sidebar-collapsed (&:where([data-sidebar="collapsed"] [data-sidebar-rail] *));
+@custom-variant sidebar-expanded (&:where(:root:not([data-sidebar="collapsed"]) *));

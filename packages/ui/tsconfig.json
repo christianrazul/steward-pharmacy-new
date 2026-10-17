@@ -1,4 +1,4 @@
 {
-  "extends": "@steward/config/tsconfig/base.json",
+  "extends": "@steward/config/tsconfig/react.json",
   "include": ["src"]
 }

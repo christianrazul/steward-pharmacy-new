@@ -27,8 +27,12 @@ pnpm db:up
 pnpm dev
 ```
 
-- Web: http://localhost:3000
+- Web: http://localhost:3000 (opens as the demo admin)
 - API health: http://localhost:4000/health
+
+`apps/web/.env.example` turns on `NEXT_PUBLIC_DEV_ROLE_SWITCHER`, which adds two temporary
+development tools: "Preview as" in the account menu (switch between the admin and cashier views)
+and a fake offline toggle on the sync card. Leave the flag off for production builds.
 
 Both apps validate their environment on start and exit with a list of what is missing or invalid.
 
@@ -61,7 +65,7 @@ packages/
   db/         Drizzle schema, migrations, seed (Milestone 4)
   data/       DataClient interface, RemoteClient, LocalClient (Milestone 2)
   sync/       Outbox and push/pull protocol types (Milestone 12)
-  ui/         shadcn components, tokens, shell (Milestone 1)
+  ui/         Design tokens and components (shadcn, restyled to the mockup)
   config/     Shared tsconfig and ESLint presets
 ```
 
@@ -72,8 +76,25 @@ Rules that keep the code honest:
 - Timestamps are stored in UTC and shown and bucketed in Asia/Manila (`packages/domain/src/dates.ts`).
 - Screens in `apps/web/src` never call `fetch`, the API client or a database directly. They use
   `@steward/data`. ESLint enforces this.
+- What each role may do is decided in one place: `can(role, action)` in
+  `packages/domain/src/permissions.ts`.
+
+## Design system
+
+The mockup in `docs/mockup` is the visual spec. Tokens live in
+[`packages/ui/src/styles/globals.css`](packages/ui/src/styles/globals.css) as CSS variables with
+Tailwind theme mappings (`bg-brand`, `text-muted-foreground`, `bg-success-soft` and so on). Light is
+the default and dark applies under `<html data-theme="dark">`. Import components from
+`@steward/ui/components/<name>`, for example `@steward/ui/components/button`.
+
+- Brand orange is only for the logo, the active nav icon, chart series, the Charge button and
+  urgent or expiring badges.
+- Use `num` (tabular numbers) on every amount, count, time and date. Use `code` (Geist Mono) only
+  for SKUs, batch, receipt numbers, usernames and the receipt body.
+- Copy is sentence case, with no em dashes and no all-caps labels.
 
 ## CI
 
 GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs install, format check,
-lint, typecheck, unit tests and build on every push to `main` and on pull requests.
+lint, typecheck, unit tests and build on every push to `main` and on pull requests, plus the
+Playwright end-to-end tests in a separate job. End-to-end tests fail on any browser console error.
