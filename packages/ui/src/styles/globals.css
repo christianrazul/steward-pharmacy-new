@@ -1,0 +1,283 @@
+/*
+ * Steward Pharmacy design tokens: shadcn/ui zinc plus Steward orange.
+ * Values are copied from the mockup's <style> block (docs/mockup). Light is the
+ * default; dark applies under [data-theme="dark"], which next-themes sets from a
+ * blocking script before first paint (so there is no flash of the wrong theme).
+ */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Scan this package's components for class names when an app imports this file. */
+@source "../components";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #09090b;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #3f3f46;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --muted: #f4f4f5;
+  /* Mockup value is #71717a; nudged two steps darker to reach WCAG AA (4.5:1) on --muted. */
+  --muted-foreground: #6f6f78;
+  --accent: #f4f4f5;
+  --accent-foreground: #18181b;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #18181b;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #a1a1aa;
+  --primary: #18181b;
+  --primary-foreground: #fafafa;
+  --primary-hover: #27272a;
+
+  --brand: #ea580c;
+  --brand-hover: #c2410c;
+  --brand-foreground: #ffffff;
+  --brand-soft: #fff7ed;
+  --brand-soft-foreground: #c2410c;
+
+  --success: #16a34a;
+  --success-soft: #f0fdf4;
+  --success-foreground: #15803d;
+  --warning: #d97706;
+  --warning-soft: #fffbeb;
+  --warning-foreground: #b45309;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --danger-foreground: #b91c1c;
+  --info: #2563eb;
+  --info-soft: #eff6ff;
+  --info-foreground: #1d4ed8;
+  --destructive: var(--danger);
+
+  --chart-1: #ea580c;
+  --chart-2: #a1a1aa;
+  --chart-grid: #f4f4f5;
+
+  --overlay: rgb(9 9 11 / 0.45);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.07);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  --radius: 10px;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --sidebar: #0f0f11;
+  --sidebar-foreground: #a1a1aa;
+  --card: #0c0c0e;
+  --card-foreground: #fafafa;
+  --popover: #111113;
+  --popover-foreground: #fafafa;
+  --muted: #1c1c1f;
+  --muted-foreground: #a1a1aa;
+  --accent: #1f1f23;
+  --accent-foreground: #fafafa;
+  --secondary: #1c1c1f;
+  --secondary-foreground: #fafafa;
+  --border: #27272a;
+  --input: #2e2e33;
+  --ring: #52525b;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --primary-hover: #e4e4e7;
+
+  --brand: #f97316;
+  --brand-hover: #fb923c;
+  --brand-foreground: #1c0a02;
+  --brand-soft: rgb(249 115 22 / 0.13);
+  --brand-soft-foreground: #fdba74;
+
+  --success: #22c55e;
+  --success-soft: rgb(34 197 94 / 0.12);
+  --success-foreground: #4ade80;
+  --warning: #f59e0b;
+  --warning-soft: rgb(245 158 11 / 0.12);
+  --warning-foreground: #fbbf24;
+  --danger: #ef4444;
+  --danger-soft: rgb(239 68 68 / 0.12);
+  --danger-foreground: #f87171;
+  --info: #3b82f6;
+  --info-soft: rgb(59 130 246 / 0.12);
+  --info-foreground: #60a5fa;
+
+  --chart-1: #f97316;
+  --chart-2: #52525b;
+  --chart-grid: #1c1c1f;
+
+  --overlay: rgb(0 0 0 / 0.6);
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.6);
+
+  color-scheme: dark;
+}
+
+/* The mockup sets line-height 1.5 on body and lets text inherit it. Tailwind's text-* sizes
+   carry their own line-heights, so align them with the mockup. */
+@theme {
+  --text-xs--line-height: 1.5;
+  --text-sm--line-height: 1.5;
+  --text-base--line-height: 1.5;
+  --text-lg--line-height: 1.5;
+}
+
+@theme inline {
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-destructive: var(--destructive);
+
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-soft-foreground: var(--brand-soft-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-grid: var(--chart-grid);
+  --color-overlay: var(--overlay);
+
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
+  /* Mockup radii: badges 6px, buttons and inputs 8px, cards 12px, dialogs and the inset panel 14px. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 14px;
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  html {
+    height: 100%;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    scroll-padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  body {
+    height: 100%;
+    margin: 0;
+    background: var(--sidebar);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--brand-soft);
+    color: var(--foreground);
+  }
+
+  /* Thin, trackless scrollbars. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--muted-foreground) 45%, transparent) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+    background: transparent;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--muted-foreground) 40%, transparent);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--muted-foreground) 65%, transparent);
+    background-clip: padding-box;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.001ms !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@utility num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Geist Mono is only for SKUs, batch numbers, receipt numbers, usernames and the receipt body. */
+@utility code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: -0.01em;
+}

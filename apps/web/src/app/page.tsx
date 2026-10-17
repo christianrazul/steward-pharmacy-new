@@ -1,16 +1,19 @@
 "use client";
 
-import { formatPeso } from "@steward/domain";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-// Placeholder until Milestone 1 builds the app shell.
-export default function HomePage() {
-  return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: 32 }}>
-      <h1>Steward Pharmacy</h1>
-      <p>Point of sale and inventory. The app shell arrives in Milestone 1.</p>
-      <p style={{ fontVariantNumeric: "tabular-nums" }}>
-        Money formatting check: <span data-testid="peso-sample">{formatPeso(123456)}</span>
-      </p>
-    </main>
-  );
+import { homePathFor } from "@/lib/session";
+import { useSessionStore } from "@/stores/session-store";
+
+/** Sends people to their role's home page, or to sign in. */
+export default function IndexPage() {
+  const router = useRouter();
+  const user = useSessionStore((state) => state.user);
+
+  useEffect(() => {
+    router.replace(user ? homePathFor(user.role) : "/sign-in");
+  }, [user, router]);
+
+  return null;
 }
