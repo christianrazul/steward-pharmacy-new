@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Builds
+dist/
+out/
+.next/
+next-env.d.ts
+*.tsbuildinfo
+
+# Tooling
+.turbo/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
