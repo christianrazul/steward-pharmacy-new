@@ -2,6 +2,10 @@ import { z } from "zod";
 
 const envSchema = z.object({
   NEXT_PUBLIC_API_URL: z.url({ protocol: /^https?$/ }),
+  NEXT_PUBLIC_DEV_ROLE_SWITCHER: z
+    .enum(["true", "false"])
+    .default("false")
+    .transform((value) => value === "true"),
 });
 
 export type WebEnv = z.infer<typeof envSchema>;

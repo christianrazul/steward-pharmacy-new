@@ -17,6 +17,9 @@ export default defineConfig({
     command: `pnpm exec next dev --port ${PORT}`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
-    env: { NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000" },
+    env: {
+      NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000",
+      NEXT_PUBLIC_DEV_ROLE_SWITCHER: "true",
+    },
   },
 });

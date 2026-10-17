@@ -72,3 +72,90 @@ deliberate design rather than a quick `Math.round`.
 
 `docker-compose.dev.yml` runs `postgres:16.15-alpine`, bound to `127.0.0.1` only, with the
 development-only credentials `steward` / `steward`.
+
+## Milestone 1
+
+### Where the shell lives
+
+`packages/ui` holds the design system: tokens (`src/styles/globals.css`), the shadcn components and
+the small custom ones (Badge variants, StatusBadge, SyncPill, StatusDot, Kbd, Stepper, Logo,
+EmptyState). The app shell (sidebar, header, branch switcher, command menu) lives in
+`apps/web/src/components/shell` because it depends on Next.js routing and app state. The desktop
+app loads the same web build, so nothing is duplicated.
+
+### shadcn components are restyled to the mockup
+
+Generated components were edited to the mockup's measurements (button heights 36/32/26/44px,
+badges 22px, dialogs and the inset panel 14px radius, menus 10px). Where the brief's radius list
+(dialogs 12px) and the mockup (14px) disagree on looks, the mockup wins.
+
+The shadcn CLI 4.21 rewrote imports to a new `cn` npm package (first published in October 2026).
+That is too new for the "boring libraries" rule, so components import `cn` from
+`@steward/ui/lib/utils` (clsx and tailwind-merge) instead. The CLI also pinned recharts 3.8.0; we
+use 3.10.1 and fixed the chart component's types to pass strict linting.
+
+### Text line-height follows the mockup
+
+The mockup gives everything line-height 1.5. Tailwind's `text-xs/sm/base/lg` carry their own
+line-heights, which moved text by 1 to 2px, so the theme sets those to 1.5. With that, the
+shell's element boxes match the mockup's to the pixel at 1280px.
+
+### Muted text is two steps darker than the mockup
+
+The mockup's `#71717a` muted text on the `#f4f4f5` muted background is 4.4:1, below WCAG AA (4.5:1),
+which the brief requires. Light `--muted-foreground` is `#6f6f78` (4.53:1), which is not visibly
+different. Dark mode already passes.
+
+### Usernames use Geist Mono
+
+The mockup shows the username in the account menu in Geist. The brief says usernames use Geist
+Mono, so the brief wins there. The "System theme" item uses the mockup's panel icon.
+
+### Theme and sidebar persistence without a flash
+
+- Theme: next-themes with `attribute="data-theme"`, `defaultTheme="system"`, stored under
+  `steward:theme`.
+- Collapsed sidebar: stored under `steward:sidebar-collapsed`. A one-line inline script at the top
+  of `<body>` sets `<html data-sidebar="collapsed">` while the HTML is parsed, and the rail's
+  collapsed styles are pure CSS keyed on that attribute (`sidebar-collapsed:` variant). React reads
+  the same attribute through `useSyncExternalStore`, so there is no hydration mismatch.
+  `next/script` with `beforeInteractive` was tried and rejected: it runs when Next boots, after
+  first paint.
+- Both are inline scripts. Milestone 13's strict CSP needs their hashes (a static export cannot
+  use nonces).
+
+### Permissions map is in packages/domain now
+
+`can(role, action)` in `packages/domain/src/permissions.ts` is the single role-to-actions map that
+the brief asks for. The shell already uses it for navigation, the branch switcher and the command
+menu. Milestone 5 adds resource and branch scoping and uses it in every API service. Add stock is
+admin-only, matching both the mockup and the brief's role table.
+
+### Temporary development tools, pulled forward from Milestone 2
+
+Testing "Ctrl/Cmd+K works for admins only" needs a staff session, so the "Preview as" switch (in
+the account menu) arrived in this milestone. It shows only when `NEXT_PUBLIC_DEV_ROLE_SWITCHER=true`.
+The same flag shows the fake offline toggle (sync card button, clickable sync pill and command).
+Without the flag the sync pill is display-only.
+
+The session is a Zustand store that starts as the demo admin and resets on reload. `/sign-in` is a
+temporary page with the two demo accounts, so "Sign out" has somewhere to go. The real sign-in
+screen comes in Milestone 2 and real authentication in Milestone 5.
+
+### Static fixtures until Milestone 2
+
+Branches, demo users and the pending-request counts (5 for admins, 2 for NCCC Market staff) live in
+`apps/web/src/fixtures`. Milestone 2 moves them behind the DataClient interface.
+
+### Responsive breakpoints
+
+The mockup's breakpoints are used as-is with arbitrary variants: `max-[1180px]` (narrower search),
+`max-[860px]` (sidebar becomes a sheet, inset panel goes edge to edge, header text hides) and
+`max-[560px]` (smaller page title).
+
+### End-to-end tests guard against console errors
+
+Every Playwright test fails if the page logs a console error or throws (`apps/web/e2e/fixtures.ts`).
+Tests open pages through `gotoApp`, which waits until the app has hydrated. Axe checks
+(WCAG 2.1 AA) run on the shell in both themes and with the command menu and mobile menu open. CI
+now runs the end-to-end tests in a separate job.

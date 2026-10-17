@@ -10,7 +10,9 @@
     "./eslint/root": "./eslint/root.js",
     "./eslint/base": "./eslint/base.js",
     "./eslint/node": "./eslint/node.js",
-    "./eslint/nextjs": "./eslint/nextjs.js"
+    "./eslint/nextjs": "./eslint/nextjs.js",
+    "./tsconfig/react.json": "./tsconfig/react.json",
+    "./eslint/react": "./eslint/react.js"
   },
   "dependencies": {
     "@eslint/js": "10.0.1",
