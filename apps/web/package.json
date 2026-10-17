@@ -1,0 +1,29 @@
+{
+  "name": "@steward/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "lint": "eslint .",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@steward/domain": "workspace:*",
+    "next": "16.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@steward/config": "workspace:*",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "10.12.0",
+    "typescript": "6.0.3"
+  }
+}
