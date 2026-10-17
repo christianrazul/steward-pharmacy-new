@@ -159,3 +159,48 @@ Every Playwright test fails if the page logs a console error or throws (`apps/we
 Tests open pages through `gotoApp`, which waits until the app has hydrated. Axe checks
 (WCAG 2.1 AA) run on the shell in both themes and with the command menu and mobile menu open. CI
 now runs the end-to-end tests in a separate job.
+
+## Milestone 3 (built before Milestone 2)
+
+### Order
+
+The domain core was built before the Milestone 2 screens so the static front end could use the
+real totals, FIFO and stock rules from the start instead of throwaway versions. Each milestone
+is still its own commit and pull request.
+
+### Exact money math
+
+Totals use exact fractions over `bigint` (`packages/domain/src/rational.ts`) and round half-up to
+the centavo only where the brief's algorithm says "round". Floating point never touches a peso
+amount, except inside discount formulas, which are converted once to thousandths of a centavo
+before rounding so float noise cannot tip a half-centavo.
+
+### Stored units
+
+- VAT rate: basis points (`1200` is 12%).
+- Percent discounts: basis points (`2000` is 20%). Fixed and per-item discounts: centavos.
+- Money everywhere: integer centavos.
+
+### Expiry day counts as expired
+
+A batch is expired on its expiry date, matching the mockup (0 days left shows "Expired"). Expired
+batches stay visible but are never sold or transferred.
+
+### Offline oversell
+
+`allocateFifoAllowingOversell` charges the shortfall to the batch the counter would have sold
+from next, taking it below zero, and reports it so the server can flag the sale.
+
+### Phone numbers
+
+Stored normalized as digits: mobile `09XXXXXXXXX`, landline with area code (`0822345678`,
+`0281234567`). `+63` and `63` prefixes are accepted.
+
+### Branch hours
+
+Closing time is exclusive: a branch that closes at 20:00 shows Closed at 8:00 PM.
+
+### Formula sample
+
+The live preview and formula validation use the mockup's sample sale: ₱1,000.00, 10 items, as
+two lines of 4 and 6 items at ₱100.00.
