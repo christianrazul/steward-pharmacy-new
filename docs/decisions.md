@@ -493,3 +493,38 @@ mockup data. `apps/web/playwright.fullstack.config.ts` builds the web in remote 
 covers a cash sale, a GCash sale, a Senior / PWD sale and the admin's sales activity. CI runs this
 suite after the UI suite. The e2e server refuses to start with `NODE_ENV=production`, and it isn't
 part of the API bundle.
+
+## Milestone 9
+
+### Request workflow on the server
+
+`apps/api/src/services/request-service.ts` handles each step:
+
+- **Create.** Staff, for their own branch only. Central can't request stock from itself. The
+  request id comes from the client, so a retry (or a synced offline request in Milestone 12) is
+  recorded once. Request numbers (REQ-1044 onwards) come from a gapless counter.
+- **Approve.** Admins set an allocation per item, each at most central's sellable stock at that
+  moment (read under the same batch locks as sales), with at least one unit in total. Errors name
+  the product.
+- **Decline.** Takes an optional note to the branch.
+- **Fulfil.** Moves the allocation from central FIFO. Each batch becomes a `transfer_out` at central
+  and a `transfer_in` at the branch, into a batch with the same number and expiry (created if
+  needed). If central no longer has enough, nothing moves and the error names the product and how
+  many central has.
+
+Every step writes a `stock_request_events` row (the timeline) and an audit row. The request row is
+locked for each step, so two admins acting at once can't both fulfil.
+
+### Changing an allocation
+
+The brief says a short fulfilment should ask the admin to re-allocate. So an approved request can
+be approved again with new amounts (`canAllocate` in the domain). It stays approved, records
+another "approved" event with the note, and is audited as `stock_request.reallocate`. In the sheet,
+approved requests have a "Change allocation" button, and the sheet switches to editing
+automatically when fulfilment is refused for lack of stock. The timeline shows the latest decision.
+
+### A branch batch with the same number
+
+If the branch already has a batch with the same number (from an earlier transfer), the transfer
+tops it up. Batch numbers are unique per product and branch, and a manufacturer's batch number has
+one expiry date.
