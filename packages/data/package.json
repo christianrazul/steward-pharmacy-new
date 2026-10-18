@@ -5,7 +5,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./fake": "./src/fake/index.ts"
+    "./fake": "./src/fake/index.ts",
+    "./remote": "./src/remote/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -13,6 +14,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@steward/api": "workspace:*",
     "@steward/config": "workspace:*",
     "@types/node": "22.20.5",
     "eslint": "10.12.0",
@@ -22,6 +24,7 @@
   "dependencies": {
     "@steward/db": "workspace:*",
     "@steward/domain": "workspace:*",
+    "hono": "4.13.13",
     "uuid": "14.0.3",
     "zod": "4.6.5"
   }
