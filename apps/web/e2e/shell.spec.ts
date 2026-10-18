@@ -173,6 +173,8 @@ test.describe("accessibility", () => {
       await page.emulateMedia({ colorScheme: theme });
       await gotoApp(page, "/dashboard");
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      // Scan the loaded dashboard, not its loading skeleton.
+      await expect(page.getByRole("img", { name: "Sales trend chart" })).toBeVisible();
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
         .analyze();
