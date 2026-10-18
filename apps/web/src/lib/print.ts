@@ -1,11 +1,13 @@
 import { formatManila, formatPhPhone } from "@steward/domain";
 import type { SaleReceipt } from "@steward/data";
+import { desktopBridge } from "@steward/data/local";
+import { toast } from "sonner";
 
 /**
  * Browser printing for thermal receipt printers (58mm or 80mm paper).
  * The receipt is written into a hidden iframe with its own @page size, so the
- * app around it never prints. The desktop app prints silently instead
- * (Milestone 11).
+ * app around it never prints. The desktop app prints silently to the default
+ * Windows printer, at the counter's paper width.
  */
 export type PaperWidth = 58 | 80;
 
@@ -90,6 +92,15 @@ hr { border: 0; border-top: 1px dashed #000; margin: 6px 0; }
 }
 
 export function printReceipt(sale: SaleReceipt): void {
+  const bridge = desktopBridge();
+  if (bridge) {
+    void (async () => {
+      const device = await bridge.deviceInfo();
+      const result = await bridge.print(receiptHtml(sale, device?.printWidth ?? 58));
+      if (!result.ok) toast.error(result.error.message);
+    })();
+    return;
+  }
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
   frame.style.position = "fixed";

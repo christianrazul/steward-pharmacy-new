@@ -1,16 +1,46 @@
 {
   "name": "@steward/desktop",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
+  "description": "Steward Pharmacy counter app",
+  "author": "Steward Pharmacy",
   "type": "module",
+  "main": "dist/main.mjs",
   "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && electron .",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e:desktop": "playwright test",
+    "package": "node build.mjs && electron-builder"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@node-rs/argon2": "2.2.2",
+    "electron-updater": "6.8.9"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
+    "@steward/api": "workspace:*",
     "@steward/config": "workspace:*",
+    "@steward/data": "workspace:*",
+    "@steward/db": "workspace:*",
+    "@steward/domain": "workspace:*",
+    "@steward/sync": "workspace:*",
     "@types/node": "22.20.5",
+    "drizzle-orm": "0.45.4",
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
     "eslint": "10.12.0",
-    "typescript": "6.0.3"
+    "typescript": "6.0.3",
+    "uuid": "14.0.3",
+    "vitest": "5.0.3",
+    "zod": "4.6.5"
+  },
+  "optionalDependencies": {
+    "@node-rs/argon2-darwin-arm64": "2.2.2",
+    "@node-rs/argon2-win32-x64-msvc": "2.2.2"
   }
 }

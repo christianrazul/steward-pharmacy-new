@@ -91,6 +91,16 @@ jobs:
       - name: End-to-end tests (full stack, real API)
         run: pnpm --filter @steward/web test:e2e:fullstack
 
+      - name: Build the desktop app
+        run: pnpm --filter @steward/desktop build
+
+      # Ubuntu 24.04 blocks the unprivileged user namespaces Electron's sandbox needs.
+      - name: Allow the Electron sandbox
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: End-to-end tests (desktop app)
+        run: xvfb-run --auto-servernum pnpm --filter @steward/desktop test:e2e:desktop
+
       - name: Upload report on failure
         if: failure()
         uses: actions/upload-artifact@v7
@@ -98,3 +108,38 @@ jobs:
           name: playwright-report
           path: apps/web/playwright-report
           retention-days: 7
+
+  desktop-installer:
+    name: Desktop installer (Windows)
+    runs-on: windows-2025
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_API_URL: /api
+      NEXT_PUBLIC_DEPLOY_ENV: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build the web app
+        run: pnpm --filter @steward/web build
+
+      - name: Build the NSIS installer (unsigned)
+        run: pnpm --filter @steward/desktop package --win --publish never
+        env:
+          STEWARD_UPDATE_URL: https://updates.invalid/desktop
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-installer
+          path: apps/desktop/release/*.exe
+          retention-days: 14

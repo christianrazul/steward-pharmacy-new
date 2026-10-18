@@ -95,7 +95,30 @@ function mergeLines(lines: SaleCreateInput["lines"]): { productId: string; qty: 
  * receipt number for the branch's web series and writes the sale, its lines,
  * the batches FIFO consumed and the stock movements.
  */
-export async function createSale(ctx: ServiceContext, raw: SaleCreateInput): Promise<SaleReceipt> {
+/** How a sale is numbered and what else is written with it. The web uses the defaults. */
+export interface SaleWriteOptions {
+  /** Takes the next receipt number inside the sale's transaction. Default: the branch's web series W. */
+  receiptNo?: (tx: Db, parts: { prefix: string; branchCode: string }) => Promise<string>;
+  /** The counter device recording the sale; null for the web. */
+  deviceId?: string | null;
+  /** Runs inside the transaction after the sale is written (the desktop appends its outbox row here). */
+  afterWrite?: (
+    tx: Db,
+    written: {
+      input: SaleCreateInput;
+      receiptNo: string;
+      soldAt: string;
+      unitPrices: Record<string, number>;
+      pricing: { vatRateBp: number; vatMode: "inclusive" | "exclusive" };
+    },
+  ) => Promise<void>;
+}
+
+export async function createSale(
+  ctx: ServiceContext,
+  raw: SaleCreateInput,
+  options: SaleWriteOptions = {},
+): Promise<SaleReceipt> {
   const user = authorize(ctx.actor, "pos.sell", { branchId: raw.branchId });
   const input = parseOrInvalid(saleCreateSchema, raw);
   const now = ctx.now();
@@ -196,18 +219,20 @@ export async function createSale(ctx: ServiceContext, raw: SaleCreateInput): Pro
       });
     }
 
-    const sequence = await nextReceiptSequence(tx, webReceiptScope(branch.id));
+    const receiptNo = options.receiptNo
+      ? await options.receiptNo(tx, { prefix: settings.receiptPrefix, branchCode: branch.code })
+      : formatReceiptNo({
+          prefix: settings.receiptPrefix,
+          branchCode: branch.code,
+          series: WEB_RECEIPT_SERIES,
+          sequence: await nextReceiptSequence(tx, webReceiptScope(branch.id)),
+        });
     const stamps = { createdAt: soldAt, updatedAt: soldAt };
     await tx.insert(schema.sales).values({
       id: input.id,
-      receiptNo: formatReceiptNo({
-        prefix: settings.receiptPrefix,
-        branchCode: branch.code,
-        series: WEB_RECEIPT_SERIES,
-        sequence,
-      }),
+      receiptNo,
       branchId: branch.id,
-      deviceId: null,
+      deviceId: options.deviceId ?? null,
       cashierUserId: user.id,
       soldAt,
       subtotal: totals.subtotal,
@@ -263,6 +288,15 @@ export async function createSale(ctx: ServiceContext, raw: SaleCreateInput): Pro
         })),
       );
     }
+    await options.afterWrite?.(tx, {
+      input,
+      receiptNo,
+      soldAt,
+      unitPrices: Object.fromEntries(
+        allocations.map(({ product }) => [product.id, product.priceCentavos]),
+      ),
+      pricing: { vatRateBp: settings.vatRateBp, vatMode: settings.vatMode },
+    });
     return input.id;
   });
 
