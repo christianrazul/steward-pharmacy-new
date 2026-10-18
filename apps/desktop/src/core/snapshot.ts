@@ -1,5 +1,5 @@
 import { type Db, schema } from "@steward/db";
-import type { PullResponse } from "@steward/sync";
+import { SYNC_TABLES, type PullResponse, type SyncRow } from "@steward/sync";
 
 import { applyChanges } from "./apply";
 import { enroll, normalizeServerUrl, pullPage } from "./server";
@@ -14,6 +14,26 @@ export interface TokenStore {
 }
 
 /**
+ * Merges pages into one change set: per table, the newest version of each row.
+ * Applied together, parents land before children even when a parent (say a
+ * person whose account changed) arrived on a later page than its rows.
+ */
+export function mergePages(pages: PullResponse[]): PullResponse["changes"] {
+  const merged: PullResponse["changes"] = {};
+  for (const name of SYNC_TABLES) {
+    const byId = new Map<string, SyncRow>();
+    for (const page of pages) {
+      for (const row of page.changes[name] ?? []) {
+        const seen = byId.get(row.id);
+        if (!seen || seen.serverVersion < row.serverVersion) byId.set(row.id, row);
+      }
+    }
+    if (byId.size > 0) merged[name] = [...byId.values()];
+  }
+  return merged;
+}
+
+/**
  * Pulls every page newer than the cursor, then applies them in one transaction,
  * so the counter never shows half a sync.
  */
@@ -22,6 +42,8 @@ export async function pullAll(
   serverUrl: string,
   token: string,
   fetchImpl: typeof fetch = fetch,
+  /** Runs first in the apply transaction (the sync engine removes provisional rows here). */
+  beforeApply?: (tx: Db) => Promise<void>,
 ): Promise<{ applied: number; cursor: number }> {
   let cursor = (await readState(db, "cursor")) ?? 0;
   const pages: PullResponse[] = [];
@@ -34,7 +56,8 @@ export async function pullAll(
   const last = pages[pages.length - 1];
   let applied = 0;
   await db.transaction(async (tx) => {
-    for (const page of pages) applied += await applyChanges(tx, page.changes);
+    await beforeApply?.(tx);
+    applied = await applyChanges(tx, mergePages(pages));
     await writeState(tx, "cursor", cursor);
     if (last) {
       await writeState(tx, "lastSyncAt", last.serverTime);

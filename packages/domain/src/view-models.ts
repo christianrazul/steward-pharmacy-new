@@ -350,3 +350,19 @@ export interface CsvExport {
   content: string;
   rows: number;
 }
+
+/** A synced change the admin should look at: refused by the server, or a sale it flagged. */
+export interface AttentionItem {
+  mutationId: string;
+  type: string;
+  status: "applied" | "rejected";
+  /** "oversold" and/or "total_mismatch" for flagged sales. */
+  flags: string[];
+  /** What happened and what to do, in words. */
+  message: string;
+  deviceLabel: string;
+  branchName: string;
+  receivedAt: string;
+  saleId: string | null;
+  receiptNo: string | null;
+}

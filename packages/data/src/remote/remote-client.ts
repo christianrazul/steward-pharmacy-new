@@ -24,6 +24,7 @@ import { hc } from "hono/client";
 import type { DataClient } from "../client";
 import { DataError } from "../errors";
 import type {
+  AttentionItem,
   BatchDetail,
   Branch,
   CsvExport,
@@ -353,5 +354,14 @@ export class RemoteClient implements DataClient {
   }
   revokeDevice(id: string): Promise<Device> {
     return this.call(() => this.api.devices[":id"].revoke.$post({ param: { id } }));
+  }
+
+  listAttention(): Promise<AttentionItem[]> {
+    return this.call(() => this.api.sync.attention.$get());
+  }
+  async resolveAttention(mutationId: string): Promise<void> {
+    await this.call(() =>
+      this.api.sync.attention[":id"].resolve.$post({ param: { id: mutationId } }),
+    );
   }
 }

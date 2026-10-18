@@ -51,7 +51,8 @@ export function createApp({ env, logger, db, auth, now = () => new Date() }: App
     cors({ origin: (origin) => (origin === env.WEB_ORIGIN ? origin : null), credentials: true }),
   );
   // Enrollment uses a one-time code, not cookies, and comes from the desktop app.
-  app.use(requireSameOrigin(env.WEB_ORIGIN, ["/devices/enroll"]));
+  // Counters' main processes send Origin app://steward, which no web page can.
+  app.use(requireSameOrigin([env.WEB_ORIGIN, "app://steward"], ["/devices/enroll"]));
 
   app.use(async (c, next) => {
     c.set("db", db);
