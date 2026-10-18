@@ -2,13 +2,11 @@
 
 import { CloudOffIcon } from "lucide-react";
 
-import { useConnectivityStore } from "@/stores/connectivity-store";
+import { useSyncStatus } from "@/data/hooks";
 
 export function OfflineBanner() {
-  const online = useConnectivityStore((state) => state.online);
-  const queued = useConnectivityStore((state) => state.queued);
+  const { online, queued } = useSyncStatus();
   if (online) return null;
-
   return (
     <div
       role="status"
@@ -17,7 +15,8 @@ export function OfflineBanner() {
       <CloudOffIcon aria-hidden="true" className="size-4 shrink-0" />
       <span>
         <b className="font-semibold">You’re offline.</b> Sales, stock and requests are saved on this
-        device{queued > 0 ? ` (${queued} queued)` : ""} and sync automatically when you reconnect.
+        device
+        {queued > 0 ? ` (${queued} queued)` : ""} and sync automatically when you reconnect.
       </span>
     </div>
   );

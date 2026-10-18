@@ -30,3 +30,6 @@ blob-report/
 # Always track CI workflows, even if a global gitignore excludes .github/
 !.github/
 !.github/**
+
+# Agent guidance files written by turbo and next dev
+AGENTS.md

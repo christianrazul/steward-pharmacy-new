@@ -79,6 +79,15 @@ Rules that keep the code honest:
 - What each role may do is decided in one place: `can(role, action)` in
   `packages/domain/src/permissions.ts`.
 
+## Data
+
+Screens read and write through the `DataClient` interface (`packages/data`), using the TanStack
+Query hooks in `apps/web/src/data/hooks.ts`. Until the API is connected (Milestone 5) the web app
+uses `FakeDataClient`, an in-memory copy of the mockup's data (387 products, four branches, a
+month of sales) that follows the same rules and permission checks as the real backend.
+
+Demo accounts: `admin` / `admin` (super admin) and `cashier1` / `pos` (cashier at NCCC Market).
+
 ## Design system
 
 The mockup in `docs/mockup` is the visual spec. Tokens live in

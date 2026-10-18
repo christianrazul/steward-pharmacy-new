@@ -2,34 +2,34 @@
 
 import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@steward/ui/components/skeleton";
 
-import { useConnectivityStore } from "@/stores/connectivity-store";
-import { useSessionStore } from "@/stores/session-store";
+import { useRefreshAfterSync, useSession } from "@/data/hooks";
 import { AppHeader } from "./app-header";
 import { CommandMenu } from "./command-menu";
+import { ConnectivityToasts } from "./connectivity-toasts";
 import { OfflineBanner } from "./offline-banner";
 import { SidebarRail, SidebarSheet } from "./app-sidebar";
 
 /**
  * Inset layout from the mockup: tinted sidebar, and the page in a white rounded
  * panel with an 8px gap around it on desktop (edge to edge below 860px).
+ * Waits for the session; without one it sends people to sign in.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const user = useSessionStore((state) => state.user);
-  const markSynced = useConnectivityStore((state) => state.markSynced);
+  const session = useSession();
 
   useEffect(() => {
-    if (!user) router.replace("/sign-in");
-  }, [user, router]);
+    if (session.isSuccess && session.data === null) router.replace("/sign-in");
+  }, [session.isSuccess, session.data, router]);
 
-  // Stand-in for the first successful sync (Milestone 12).
-  useEffect(() => {
-    if (useConnectivityStore.getState().lastSyncedAt === null) markSynced();
-  }, [markSynced]);
+  if (!session.data) return <ShellSkeleton />;
+  return <SignedInShell>{children}</SignedInShell>;
+}
 
-  if (!user) return null;
-
+function SignedInShell({ children }: { children: ReactNode }) {
+  useRefreshAfterSync();
   return (
     <>
       <div className="flex h-full min-h-0">
@@ -44,6 +44,21 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       <CommandMenu />
+      <ConnectivityToasts />
     </>
+  );
+}
+
+function ShellSkeleton() {
+  return (
+    <div className="flex h-full min-h-0" role="status" aria-busy="true" aria-label="Loading">
+      <div className="flex w-64 shrink-0 flex-col gap-3 p-3 max-[860px]:hidden [[data-sidebar=collapsed]_&]:w-[60px]">
+        <Skeleton className="h-10" />
+        <Skeleton className="h-6 w-2/3" />
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-6 w-1/2" />
+      </div>
+      <div className="m-2 ml-0 flex-1 rounded-2xl border border-border bg-background max-[860px]:m-0 max-[860px]:rounded-none max-[860px]:border-0" />
+    </div>
   );
 }

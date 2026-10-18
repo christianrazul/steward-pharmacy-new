@@ -176,3 +176,42 @@ describe("checkout helpers", () => {
     expect(changeDue(20000, 29857)).toBe(-9857);
   });
 });
+
+describe("product names", () => {
+  it("names products like the mockup", async () => {
+    const { productDisplayName, productSearchText } = await import("./products");
+    expect(
+      productDisplayName({
+        brand: "Biogesic",
+        genericName: "Paracetamol",
+        strength: "500mg",
+        form: "Tab",
+      }),
+    ).toBe("Biogesic 500mg Tab");
+    expect(
+      productDisplayName({
+        brand: "RiteMed",
+        genericName: "Cefalexin",
+        strength: "250mg",
+        form: "Cap",
+      }),
+    ).toBe("RiteMed Cefalexin 250mg Cap");
+    expect(
+      productDisplayName({
+        brand: "Centrum",
+        genericName: "Multivitamins",
+        strength: "",
+        form: "Cap",
+      }),
+    ).toBe("Centrum Cap");
+    expect(
+      productSearchText({
+        brand: "Biogesic",
+        genericName: "Paracetamol",
+        strength: "500mg",
+        form: "Tab",
+        sku: "PS-1001",
+      }),
+    ).toBe("biogesic paracetamol ps-1001 500mg");
+  });
+});

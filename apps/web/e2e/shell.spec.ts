@@ -2,15 +2,18 @@ import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
-import { ADMIN_NAV, STAFF_NAV, finishAnimations, gotoApp, previewAs } from "./helpers";
+import { ADMIN_NAV, STAFF_NAV, finishAnimations, gotoApp, previewAs, signInAs } from "./helpers";
 
 const mainNav = (page: Page) => page.getByRole("navigation", { name: "Main" });
 
 test.describe("admin shell", () => {
   test("lands on the dashboard with grouped navigation", async ({ page }) => {
+    await signInAs(page, "admin");
     await page.goto("/");
     await expect(page).toHaveURL(/\/dashboard\/?$/);
-    await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: /Good (morning|afternoon|evening)/ }),
+    ).toBeVisible();
 
     const nav = mainNav(page);
     for (const group of ["Overview", "Store", "Admin"])

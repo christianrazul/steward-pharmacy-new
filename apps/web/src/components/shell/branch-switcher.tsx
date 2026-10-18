@@ -16,9 +16,9 @@ import {
 import { Logo } from "@steward/ui/components/logo";
 import { cn } from "@steward/ui/lib/utils";
 
-import { BRANCHES } from "@/fixtures/branches";
-import { useSession } from "@/lib/session";
-import { useSessionStore } from "@/stores/session-store";
+import { useBranches } from "@/data/hooks";
+import { useCurrentUser, useWorkingBranch } from "@/lib/session";
+import { useBranchStore } from "@/stores/branch-store";
 
 const triggerClass = cn(
   "flex w-full items-center gap-2.5 rounded-[9px] p-2 text-left transition-colors",
@@ -41,10 +41,10 @@ function BrandBlock({ branchName }: { branchName: string }) {
 
 /** Admins pick the branch they are working at. Staff see their branch, locked. */
 export function BranchSwitcher() {
-  const { user, branchName } = useSession();
-  const workingBranchId = useSessionStore((state) => state.workingBranchId);
-  const setWorkingBranch = useSessionStore((state) => state.setWorkingBranch);
-  if (!user) return null;
+  const user = useCurrentUser();
+  const { branchId, branchName } = useWorkingBranch();
+  const { data: branches = [] } = useBranches();
+  const setWorkingBranchId = useBranchStore((state) => state.setWorkingBranchId);
 
   if (!can(user.role, "branches.switch")) {
     return (
@@ -75,12 +75,12 @@ export function BranchSwitcher() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[240px]">
         <DropdownMenuLabel>Working branch</DropdownMenuLabel>
-        {BRANCHES.map((branch) => (
+        {branches.map((branch) => (
           <DropdownMenuItem
             key={branch.id}
             onSelect={() => {
-              if (branch.id === workingBranchId) return;
-              setWorkingBranch(branch.id);
+              if (branch.id === branchId) return;
+              setWorkingBranchId(branch.id);
               toast.info(`Switched to ${branch.name}`);
             }}
           >
@@ -93,14 +93,14 @@ export function BranchSwitcher() {
                 <span className="block text-[12.5px] text-muted-foreground">Central warehouse</span>
               )}
             </span>
-            {branch.id === workingBranchId && (
+            {branch.id === branchId && (
               <CheckIcon aria-label="Current branch" className="ml-auto" />
             )}
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings">
+          <Link href="/settings?tab=branches">
             <PlusIcon aria-hidden="true" />
             Add branch
           </Link>

@@ -5,6 +5,8 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@steward/ui/components/sonner";
 import { TooltipProvider } from "@steward/ui/components/tooltip";
 
+import { DataProvider } from "@/data/provider";
+
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider
@@ -14,10 +16,12 @@ export function Providers({ children }: { children: ReactNode }) {
       disableTransitionOnChange
       storageKey="steward:theme"
     >
-      <TooltipProvider delayDuration={200}>
-        {children}
-        <Toaster />
-      </TooltipProvider>
+      <DataProvider>
+        <TooltipProvider delayDuration={200}>
+          {children}
+          <Toaster />
+        </TooltipProvider>
+      </DataProvider>
     </ThemeProvider>
   );
 }
