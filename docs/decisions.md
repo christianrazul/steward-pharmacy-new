@@ -528,3 +528,30 @@ automatically when fulfilment is refused for lack of stock. The timeline shows t
 If the branch already has a batch with the same number (from an earlier transfer), the transfer
 tops it up. Batch numbers are unique per product and branch, and a manufacturer's batch number has
 one expiry date.
+
+## Milestone 10
+
+### Reports are Manila days, computed in SQL
+
+Dashboard and sales activity use the same domain period ranges (`periodRange`, Asia/Manila), turned
+into timestamp bounds that SQL filters and buckets with. The tests place sales at 11:59 PM and
+12:01 AM Manila time and check they land on Saturday and Sunday. They also check that "Today"
+includes the 12:01 AM sale but not the 11:59 PM one, and that the CSV shows Manila wall-clock time.
+The Today chart's first and last hourly buckets reach to midnight, so after-hours sales still count
+in the trend.
+
+Aggregates run in SQL: KPIs, trend buckets, branch performance, top sellers, expiring batches, and
+the request list counts (moved from JavaScript in this milestone, since requests grow without
+bound). Tests check that dashboard revenue, transactions and trend equal the sales activity totals
+for every period, for each branch and for all branches.
+
+### CSV export
+
+`GET /sales/export` runs the same filters and permission check as sales activity, and returns JSON
+`{ filename, content, rows }`. The browser saves it as a file, so the session cookie never needs to
+go in a download URL. Cells that start with `=`, `+`, `-` or `@` are prefixed so spreadsheets don't
+run them as formulas.
+
+### Test clock
+
+`createTestApp` has `setNow`, so tests can record sales at exact moments.

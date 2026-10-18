@@ -60,33 +60,47 @@ export async function listRequests(
 ): Promise<StockRequestList> {
   const user = authorize(ctx.actor, "stock_requests.view");
   const branchId = scopedBranch(user, query.branchId);
-  const all = await rows<SummaryRow>(
+  const inScope = sql`(${branchId}::uuid is null or r.branch_id = ${branchId}::uuid)`;
+  const shown = await rows<SummaryRow>(
     ctx.db,
-    sql`${SUMMARY} and (${branchId}::uuid is null or r.branch_id = ${branchId}::uuid)
-        order by (r.status = 'pending' and r.priority = 'urgent') desc, r.created_at desc`,
+    sql`${SUMMARY} and ${inScope} and (${query.status} = 'all' or r.status::text = ${query.status})
+        order by (r.status = 'pending' and r.priority = 'urgent') desc, r.created_at desc, r.id desc`,
   );
-  const pending = all.filter((row) => row.status === "pending");
-  const count = (status: RequestStatus) => all.filter((row) => row.status === status).length;
-  const shown = all
-    .filter((row) => query.status === "all" || row.status === query.status)
-    .sort((a, b) => {
-      const urgent = (row: SummaryRow) => row.status === "pending" && row.priority === "urgent";
-      if (urgent(a) !== urgent(b)) return urgent(a) ? -1 : 1;
-      return b.created_at.localeCompare(a.created_at);
-    });
+  const [counts] = await rows<{
+    all: number;
+    pending: number;
+    approved: number;
+    declined: number;
+    fulfilled: number;
+    urgent: number;
+    pending_units: number;
+  }>(
+    ctx.db,
+    sql`select count(*)::int as all,
+               (count(*) filter (where r.status = 'pending'))::int as pending,
+               (count(*) filter (where r.status = 'approved'))::int as approved,
+               (count(*) filter (where r.status = 'declined'))::int as declined,
+               (count(*) filter (where r.status = 'fulfilled'))::int as fulfilled,
+               (count(*) filter (where r.status = 'pending' and r.priority = 'urgent'))::int as urgent,
+               coalesce(sum(i.units) filter (where r.status = 'pending'), 0)::int as pending_units
+        from stock_requests r
+        left join (select request_id, sum(qty_requested) as units from stock_request_items group by request_id) i
+          on i.request_id = r.id
+        where r.deleted_at is null and ${inScope}`,
+  );
   return {
     rows: shown.map(toSummary),
     counts: {
-      all: all.length,
-      pending: count("pending"),
-      approved: count("approved"),
-      declined: count("declined"),
-      fulfilled: count("fulfilled"),
+      all: counts?.all ?? 0,
+      pending: counts?.pending ?? 0,
+      approved: counts?.approved ?? 0,
+      declined: counts?.declined ?? 0,
+      fulfilled: counts?.fulfilled ?? 0,
     },
     pending: {
-      count: pending.length,
-      urgent: pending.filter((row) => row.priority === "urgent").length,
-      units: pending.reduce((sum, row) => sum + row.units, 0),
+      count: counts?.pending ?? 0,
+      urgent: counts?.urgent ?? 0,
+      units: counts?.pending_units ?? 0,
     },
   };
 }
