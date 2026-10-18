@@ -14,6 +14,8 @@ export const WEB_ORIGIN = "http://localhost:3000";
  */
 export async function createTestApp(options: { engine?: Engine; now?: Date } = {}) {
   const now = options.now ?? new Date("2026-10-18T02:00:00Z");
+  // The app's clock. Tests that need sales at a precise time move it with setNow.
+  let clock = now;
   const data: MockupDataset = buildMockupDataset(now);
   const test = await createTestDb(
     options.engine ?? (process.env.TEST_DATABASE_URL ? "postgres" : "pglite"),
@@ -30,7 +32,7 @@ export async function createTestApp(options: { engine?: Engine; now?: Date } = {
     logger: pino({ level: process.env.TEST_LOG_LEVEL ?? "silent" }),
     db: test.db,
     auth,
-    now: () => now,
+    now: () => clock,
   });
 
   async function request(path: string, init: RequestInit & { cookie?: string } = {}) {
@@ -58,7 +60,11 @@ export async function createTestApp(options: { engine?: Engine; now?: Date } = {
       .join("; ");
   }
 
-  return { app, data, db: test.db, request, signInAs, close: test.close, now };
+  function setNow(date: Date) {
+    clock = date;
+  }
+
+  return { app, data, db: test.db, request, signInAs, close: test.close, now, setNow };
 }
 
 export type TestApp = Awaited<ReturnType<typeof createTestApp>>;
