@@ -271,3 +271,29 @@ describe("stock requests", () => {
     expect(res.status).toBe(422);
   });
 });
+
+describe("request list", () => {
+  it("counts match the rows for each status, for admins and staff", async () => {
+    for (const cookie of [adminCookie, staffCookie]) {
+      const all = await body<{
+        rows: StockRequestSummary[];
+        counts: Record<string, number>;
+        pending: { count: number; urgent: number; units: number };
+      }>(await t.request("/requests?status=all", { cookie }));
+      expect(all.counts.all).toBe(all.rows.length);
+      for (const status of ["pending", "approved", "declined", "fulfilled"]) {
+        const page = await body<{ rows: StockRequestSummary[] }>(
+          await t.request(`/requests?status=${status}`, { cookie }),
+        );
+        expect(page.rows.every((row) => row.status === status)).toBe(true);
+        expect(all.counts[status]).toBe(page.rows.length);
+      }
+      const pending = all.rows.filter((row) => row.status === "pending");
+      expect(all.pending).toEqual({
+        count: pending.length,
+        urgent: pending.filter((row) => row.priority === "urgent").length,
+        units: pending.reduce((sum, row) => sum + row.units, 0),
+      });
+    }
+  });
+});
