@@ -2,12 +2,19 @@
 
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Building2Icon, PercentIcon, SlidersHorizontalIcon, UsersIcon } from "lucide-react";
+import {
+  Building2Icon,
+  MonitorIcon,
+  PercentIcon,
+  SlidersHorizontalIcon,
+  UsersIcon,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@steward/ui/components/tabs";
 
 import { Page } from "@/components/page-header";
 import { RequirePermission } from "@/components/require-permission";
 import { BranchSettings } from "@/components/settings/branch-settings";
+import { DeviceSettings } from "@/components/settings/device-settings";
 import { DiscountSettings } from "@/components/settings/discount-settings";
 import { GeneralSettings } from "@/components/settings/general-settings";
 import { StaffSettings } from "@/components/settings/staff-settings";
@@ -17,6 +24,7 @@ const TABS = [
   { value: "branches", label: "Branches", icon: Building2Icon },
   { value: "accounts", label: "Staff accounts", icon: UsersIcon },
   { value: "discounts", label: "Discounts", icon: PercentIcon },
+  { value: "devices", label: "Devices", icon: MonitorIcon },
 ] as const;
 
 export default function SettingsPage() {
@@ -40,7 +48,7 @@ function Settings() {
     <div className="max-w-[1040px]">
       <Page
         title="Settings"
-        description="Branches, staff accounts, discounts and how receipts are computed."
+        description="Branches, staff accounts, discounts, counter devices and how receipts are computed."
       >
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList variant="underline" aria-label="Settings sections">
@@ -62,6 +70,9 @@ function Settings() {
           </TabsContent>
           <TabsContent value="discounts">
             <DiscountSettings />
+          </TabsContent>
+          <TabsContent value="devices">
+            <DeviceSettings />
           </TabsContent>
         </Tabs>
       </Page>
