@@ -34,12 +34,22 @@ const phoneSchema = z
     return normalized;
   });
 
-const optionalEmail = z
-  .string()
-  .trim()
-  .max(200)
-  .refine((value) => value === "" || /^\S+@\S+\.\S+$/.test(value), "Check the email address.")
-  .transform((value) => (value === "" ? null : value.toLowerCase()));
+/**
+ * Optional text: blank becomes null. Null is accepted too, so a parsed value
+ * parses again unchanged (clients validate, then the server validates again).
+ */
+function optionalText(max: number) {
+  return z
+    .string()
+    .trim()
+    .max(max)
+    .nullable()
+    .transform((value) => (value === null || value === "" ? null : value));
+}
+
+const optionalEmail = optionalText(200)
+  .refine((value) => value === null || /^\S+@\S+\.\S+$/.test(value), "Check the email address.")
+  .transform((value) => (value === null ? null : value.toLowerCase()));
 
 // ---------------------------------------------------------------------------
 // Sign-in
@@ -263,15 +273,8 @@ const staffBase = z.object({
   branchId: idSchema,
   phone: phoneSchema,
   email: optionalEmail,
-  address: z
-    .string()
-    .trim()
-    .max(300)
-    .transform((value) => (value === "" ? null : value)),
-  prcLicenseNo: z
-    .string()
-    .trim()
-    .transform((value) => (value === "" ? null : value)),
+  address: optionalText(300),
+  prcLicenseNo: optionalText(20),
   active: z.boolean(),
 });
 

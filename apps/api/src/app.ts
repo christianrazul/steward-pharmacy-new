@@ -17,6 +17,7 @@ import { referenceRoutes } from "./routes/reference";
 import { reportRoutes } from "./routes/reports";
 import { requestRoutes } from "./routes/requests";
 import { sessionRoutes } from "./routes/session";
+import { settingsRoutes } from "./routes/settings";
 
 export interface AppDeps {
   env: Pick<Env, "WEB_ORIGIN">;
@@ -89,7 +90,8 @@ export function createApp({ env, logger, db, auth, now = () => new Date() }: App
     .route("/", inventoryRoutes)
     .route("/", requestRoutes)
     .route("/", reportRoutes)
-    .route("/", peopleRoutes);
+    .route("/", peopleRoutes)
+    .route("/", settingsRoutes);
 
   return routes;
 }
