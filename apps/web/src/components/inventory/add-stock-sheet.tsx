@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PRODUCT_CATEGORIES, PRODUCT_FORMS, parsePesoInput } from "@steward/domain";
+import { PRODUCT_CATEGORIES, PRODUCT_FORMS, manilaToday, parsePesoInput } from "@steward/domain";
 import type { ProductLookup } from "@steward/data";
 import { PillIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -87,6 +87,10 @@ export function AddStockSheet({
 function AddStockForm({ branchId, onClose }: { branchId: string; onClose: () => void }) {
   const [form, setForm] = useState<Form>(() => blank(branchId));
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // One receipt id (and new product id) per opened sheet, so retrying after a
+  // dropped connection never receives the same delivery twice.
+  const [receiptId] = useState(() => uuidv7());
+  const [newProductId] = useState(() => uuidv7());
   const { data: branches = [] } = useBranches();
   const { online } = useSyncStatus();
   const receive = useDataMutation(
@@ -107,10 +111,10 @@ function AddStockForm({ branchId, onClose }: { branchId: string; onClose: () => 
       setErrors(local);
       return;
     }
-    const productId = form.product?.id ?? uuidv7();
+    const productId = form.product?.id ?? newProductId;
     receive.mutate(
       {
-        id: uuidv7(),
+        id: receiptId,
         product:
           form.mode === "existing"
             ? { kind: "existing", productId }
@@ -131,7 +135,8 @@ function AddStockForm({ branchId, onClose }: { branchId: string; onClose: () => 
         batchNo: form.batchNo,
         qty: Number(form.qty || "0"),
         expiryDate: form.expiryDate,
-        today: "",
+        // The API re-checks expiry against its own clock.
+        today: manilaToday(),
       },
       {
         onSuccess: (result) => {
