@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
   output: "export",
   trailingSlash: true,
   images: { unoptimized: true },
-  transpilePackages: ["@steward/domain", "@steward/ui"],
+  transpilePackages: ["@steward/domain", "@steward/ui", "@steward/data", "@steward/db"],
   poweredByHeader: false,
   // The floating dev badge covers the account menu in the sidebar. Build errors still show.
   devIndicators: false,

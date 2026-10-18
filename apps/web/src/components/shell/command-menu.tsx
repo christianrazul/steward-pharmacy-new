@@ -24,10 +24,13 @@ import {
 } from "@steward/ui/components/command";
 import { Kbd } from "@steward/ui/components/kbd";
 
+import { useQueryClient } from "@tanstack/react-query";
+
+import { useSyncStatus } from "@/data/hooks";
+import { useDataClient } from "@/data/provider";
 import { env } from "@/env";
 import { ALL_NAV_ITEMS } from "@/lib/nav";
-import { useConnectivityStore } from "@/stores/connectivity-store";
-import { useSessionStore } from "@/stores/session-store";
+import { useCurrentUser } from "@/lib/session";
 import { useUiStore } from "@/stores/ui-store";
 
 /**
@@ -36,14 +39,15 @@ import { useUiStore } from "@/stores/ui-store";
  */
 export function CommandMenu() {
   const router = useRouter();
-  const user = useSessionStore((state) => state.user);
-  const signOut = useSessionStore((state) => state.signOut);
+  const client = useDataClient();
+  const queryClient = useQueryClient();
+  const user = useCurrentUser();
   const open = useUiStore((state) => state.commandOpen);
   const setOpen = useUiStore((state) => state.setCommandOpen);
   const toggle = useUiStore((state) => state.toggleCommand);
   const { resolvedTheme, setTheme } = useTheme();
-  const { online, goOffline, reconnect } = useConnectivityStore();
-  const allowed = user !== null && can(user.role, "command_palette.open");
+  const { online } = useSyncStatus();
+  const allowed = can(user.role, "command_palette.open");
 
   useEffect(() => {
     if (!allowed) return;
@@ -108,7 +112,7 @@ export function CommandMenu() {
             <CommandItem
               onSelect={() => {
                 run(() => {
-                  router.push("/inventory");
+                  router.push("/inventory?add=1");
                 });
               }}
             >
@@ -126,10 +130,10 @@ export function CommandMenu() {
             {dark ? <SunIcon aria-hidden="true" /> : <MoonIcon aria-hidden="true" />}
             {dark ? "Switch to light theme" : "Switch to dark theme"}
           </CommandItem>
-          {env.NEXT_PUBLIC_DEV_ROLE_SWITCHER && (
+          {env.NEXT_PUBLIC_DEV_ROLE_SWITCHER && client.simulateConnectivity !== undefined && (
             <CommandItem
               onSelect={() => {
-                run(online ? goOffline : reconnect);
+                run(() => client.simulateConnectivity?.(!online));
               }}
             >
               {online ? <WifiOffIcon aria-hidden="true" /> : <WifiIcon aria-hidden="true" />}
@@ -139,8 +143,10 @@ export function CommandMenu() {
           <CommandItem
             onSelect={() => {
               run(() => {
-                signOut();
-                router.push("/sign-in");
+                void client.signOut().then(async () => {
+                  await queryClient.resetQueries();
+                  router.push("/sign-in");
+                });
               });
             }}
           >

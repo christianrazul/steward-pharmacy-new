@@ -3,17 +3,18 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
+import { useSession } from "@/data/hooks";
 import { homePathFor } from "@/lib/session";
-import { useSessionStore } from "@/stores/session-store";
 
 /** Sends people to their role's home page, or to sign in. */
 export default function IndexPage() {
   const router = useRouter();
-  const user = useSessionStore((state) => state.user);
+  const session = useSession();
 
   useEffect(() => {
-    router.replace(user ? homePathFor(user.role) : "/sign-in");
-  }, [user, router]);
+    if (!session.isSuccess) return;
+    router.replace(session.data ? homePathFor(session.data.user.role) : "/sign-in");
+  }, [session.isSuccess, session.data, router]);
 
   return null;
 }

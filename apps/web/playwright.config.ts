@@ -14,10 +14,13 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    command: `pnpm exec next dev --port ${PORT}`,
+    // The production static export, as Caddy will serve it.
+    command: `pnpm exec next build && node e2e/static-server.mjs`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
+    timeout: 240_000,
     env: {
+      PORT: String(PORT),
       NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000",
       NEXT_PUBLIC_DEV_ROLE_SWITCHER: "true",
     },

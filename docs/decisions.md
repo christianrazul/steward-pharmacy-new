@@ -204,3 +204,75 @@ Closing time is exclusive: a branch that closes at 20:00 shows Closed at 8:00 PM
 
 The live preview and formula validation use the mockup's sample sale: ₱1,000.00, 10 items, as
 two lines of 4 and 6 items at ₱100.00.
+
+## Milestone 2
+
+### DataClient and the fake client
+
+- `packages/data` defines the `DataClient` interface and the view models screens receive. Screens
+  use it through TanStack Query hooks in `apps/web/src/data/hooks.ts`.
+- `FakeDataClient` (`packages/data/src/fake`) runs in memory over the mockup dataset, using the
+  real domain rules (totals, FIFO, stock status, allocation, request transitions). It also makes
+  the same role and branch checks the API will make, so permission behavior can be tested before
+  the backend exists. It adds about 150ms of latency in the browser so loading states show.
+- The dataset generator lives in `packages/db/src/seed/mockup-dataset.ts` (pure TypeScript), so
+  the Milestone 4 seed loads the same data.
+
+### The mockup dataset
+
+- The mockup's catalog, batch numbers, quantities and expiry dates come out exactly as in the
+  mockup: its seeded random sequence is reproduced, and the expiry dates are relative to today.
+- The mockup generated sales and stock requests at random without touching stock. Here they are
+  generated around the stock and kept consistent with it. Each batch's receipt movement equals
+  its final quantity, plus units sold, plus transfers out, minus transfers in. Sales fall within
+  store hours, their totals come from `computeTotals`, and receipt numbers are gapless per counter.
+- Fulfilled seed requests only move products whose batch numbers exist at both central and the
+  branch, so transfers keep batch numbers without changing the mockup's final quantities.
+- Demo passwords are the mockup's (`admin` / `admin`, `cashier1` / `pos`, others `pos`). They are
+  shorter than the 6-character rule because they are seed data, never created through the app.
+
+### Sign-in and session in the static front end
+
+The real sign-in screen from the mockup is in place. The fake client keeps the signed-in user's
+id in `sessionStorage`. The demo account buttons on the sign-in page, and "Preview as" in the
+account menu, show only with `NEXT_PUBLIC_DEV_ROLE_SWITCHER=true`. "Preview as" signs in through
+the DataClient with the demo account, so it keeps working against the real API in development.
+
+The art panel on the sign-in page shows the four branches as "Synced", without the mockup's
+revenue figures, because nothing about sales should show before sign-in.
+
+### Forms
+
+Forms keep what people typed (strings) in react-hook-form. On submit they convert the values
+(pesos to centavos, percent to basis points) and validate with the shared Zod schema from
+`packages/domain`. Schema errors and server field errors map back onto form fields. This keeps
+one set of rules and messages for the forms, the fake client, the API and the desktop.
+
+### Selects
+
+Filter and form selects use a native `<select>` styled like the mockup (`NativeSelect` in
+`packages/ui`) instead of the Radix select. They match the mockup exactly, and native selects
+behave predictably with keyboards on counter PCs and on phones.
+
+### Printing
+
+`apps/web/src/lib/print.ts` prints receipts through a hidden iframe with its own `@page` size
+(58mm or 80mm, remembered per browser, 80mm by default), so only the receipt prints.
+
+### Working branch
+
+Admins choose a working branch in the sidebar. It is kept in `sessionStorage` and used by the
+POS and inventory. Staff always work at their assigned branch, and the data layer refuses other
+branches regardless of what the screen asks for.
+
+### Dashboard comparisons
+
+KPI deltas compare the current period so far with the same elapsed span of the previous period,
+for example today until 10 AM against yesterday until 10 AM. The trend chart shows the whole
+previous period. Today's chart runs from 7 AM to 9 PM; sales outside those hours count toward
+the first or last hour.
+
+### Product search
+
+Search matches when every word typed appears in the brand, generic name, SKU or strength, so
+"biogesic 500" finds Biogesic 500mg.

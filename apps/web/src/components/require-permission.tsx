@@ -4,21 +4,20 @@ import { useEffect, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { can, type Action } from "@steward/domain";
 
-import { homePathFor } from "@/lib/session";
-import { useSessionStore } from "@/stores/session-store";
+import { homePathFor, useCurrentUser } from "@/lib/session";
 
 /**
  * Sends people to their home page when they open a page their role cannot use.
- * This is navigation only. From Milestone 5 the API refuses the data as well.
+ * This is navigation only; the data layer refuses the data as well.
  */
 export function RequirePermission({ action, children }: { action: Action; children: ReactNode }) {
   const router = useRouter();
-  const user = useSessionStore((state) => state.user);
-  const allowed = user !== null && can(user.role, action);
+  const user = useCurrentUser();
+  const allowed = can(user.role, action);
 
   useEffect(() => {
-    if (user && !allowed) router.replace(homePathFor(user.role));
-  }, [user, allowed, router]);
+    if (!allowed) router.replace(homePathFor(user.role));
+  }, [allowed, user.role, router]);
 
   return allowed ? children : null;
 }
