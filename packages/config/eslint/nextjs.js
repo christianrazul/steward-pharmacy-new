@@ -68,7 +68,7 @@ export function nextjsConfig(tsconfigRootDir) {
     },
     {
       // Config files and test servers run in Node, not the browser.
-      files: ["**/*.mjs", "*.config.ts", "e2e/**/*.ts"],
+      files: ["**/*.mjs", "*.config.ts", "e2e/**/*.ts", "e2e-fullstack/**/*.ts"],
       languageOptions: { globals: { ...globals.node } },
     },
   ];

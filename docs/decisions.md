@@ -456,3 +456,40 @@ numbers are stored in upper case, so `ab-12` tops up `AB-12`.
 On hand in Inventory includes expired batches, because the stock is physically there and needs
 pulling. Expired batches are flagged in the batch rows and never marked "sells next". POS sellable
 counts only unexpired batches. A batch counts as expired on its expiry date.
+
+## Milestone 8
+
+### Selling online
+
+`POST /sales` (`apps/api/src/services/sale-service.ts`) re-checks everything with
+`packages/domain` in one transaction:
+
+- current prices, the discount and the settings;
+- sellable stock, FIFO and never expired;
+- payment: cash covers the total, or a GCash reference with 13 digits.
+
+The counter sends the total it showed (`expectedTotalCentavos`). If prices changed since the cart
+was built, the sale is refused, never silently repriced. Lines for the same product are merged.
+
+### Last unit, two cashiers
+
+A sale first locks the batch rows for its products at the branch, in id order, then reads on hand
+from the ledger. A second sale of the same product waits and then sees the first one's movements,
+so it gets "… just sold out" instead of overselling. Locking in id order means two sales with
+overlapping products can't deadlock. Fulfilling stock requests will use the same helper
+(`lockBatchStock`). The concurrency test runs on real PostgreSQL in CI.
+
+### Receipt numbers on the web
+
+Web sales take the next number from the `web:<branch id>` counter, inside the sale's transaction,
+so the sequence has no gaps (a failed sale gives its number back). Series W, for example
+OR-NCC-W-000001. Retrying a sale with the same id returns the original receipt. The discount label
+stored on the sale (`saleDiscountLabel`) is in the domain package, shared with the demo client.
+
+### Full-stack end-to-end tests
+
+`apps/api/src/e2e-server.ts` starts the API on a fresh in-memory PGlite database seeded with the
+mockup data. `apps/web/playwright.fullstack.config.ts` builds the web in remote mode against it and
+covers a cash sale, a GCash sale, a Senior / PWD sale and the admin's sales activity. CI runs this
+suite after the UI suite. The e2e server refuses to start with `NODE_ENV=production`, and it isn't
+part of the API bundle.

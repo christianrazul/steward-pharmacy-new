@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { TOTALS_VECTORS } from "./test-vectors";
-import { type DiscountRule, computeTotals, discountApplied, discountShortLabel } from "./totals";
+import {
+  type DiscountRule,
+  computeTotals,
+  discountApplied,
+  discountShortLabel,
+  saleDiscountLabel,
+} from "./totals";
 
 const inclusive = { vatRateBp: 1200, vatMode: "inclusive" } as const;
 const exclusive = { vatRateBp: 1200, vatMode: "exclusive" } as const;
@@ -213,5 +219,29 @@ describe("discountShortLabel", () => {
     [{ mode: "formula", value: 0 }, "Formula"],
   ] as const)("labels %j as %s", (input, label) => {
     expect(discountShortLabel(input)).toBe(label);
+  });
+});
+
+describe("saleDiscountLabel", () => {
+  const senior: DiscountRule = {
+    name: "Senior / PWD",
+    mode: "percent",
+    value: 2000,
+    formula: null,
+    capCentavos: null,
+    minSpendCentavos: 50_000,
+    isVatExempt: true,
+  };
+  const lines = [{ qty: 1, unitPriceCentavos: 11_200, isTaxable: true }];
+  const settings = { vatRateBp: 1200, vatMode: "inclusive" } as const;
+
+  it("names the discount when it took something off", () => {
+    const totals = computeTotals(lines, { ...senior, minSpendCentavos: null }, settings);
+    expect(saleDiscountLabel(senior, totals)).toBe("Senior / PWD 20%");
+  });
+
+  it("is null without a discount or when it took nothing off", () => {
+    expect(saleDiscountLabel(null, computeTotals(lines, null, settings))).toBeNull();
+    expect(saleDiscountLabel(senior, computeTotals(lines, senior, settings))).toBeNull();
   });
 });
