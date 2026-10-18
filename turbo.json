@@ -10,7 +10,8 @@
     "lint": {},
     "typecheck": {},
     "test": {
-      "outputs": ["coverage/**"]
+      "outputs": ["coverage/**"],
+      "env": ["TEST_DATABASE_URL"]
     },
     "test:e2e": {
       "cache": false
