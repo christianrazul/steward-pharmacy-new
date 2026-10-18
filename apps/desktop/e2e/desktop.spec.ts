@@ -11,6 +11,8 @@ import {
 } from "@playwright/test";
 
 const API = "http://localhost:4300";
+/** A fresh series per attempt, so a retry against the same server doesn't collide. */
+const SERIES = String(10 + Math.floor(Math.random() * 89)).padStart(2, "0");
 const WEB_ORIGIN = "http://localhost:3300";
 
 /** An admin adds a counter in Settings and reads out the one-time code. */
@@ -32,7 +34,12 @@ async function enrollmentCode(): Promise<string> {
   const res = await fetch(`${API}/devices`, {
     method: "POST",
     headers: { "content-type": "application/json", origin: WEB_ORIGIN, cookie },
-    body: JSON.stringify({ branchId, label: "Counter 7", receiptSeries: "07", printWidth: 58 }),
+    body: JSON.stringify({
+      branchId,
+      label: `Counter ${SERIES}`,
+      receiptSeries: SERIES,
+      printWidth: 58,
+    }),
   });
   if (!res.ok) throw new Error(`Adding the device failed: ${await res.text()}`);
   return ((await res.json()) as { code: string }).code;
@@ -65,11 +72,11 @@ async function sellOne(page: Page, query: string) {
   await expect(dialog.getByText("Payment received")).toBeVisible();
   const receiptNo =
     (await dialog
-      .getByText(/OR-NCC-07-\d{6}/)
+      .getByText(new RegExp(`OR-NCC-${SERIES}-\\d{6}`))
       .first()
       .textContent()) ?? "";
   await dialog.getByRole("button", { name: "New sale" }).click();
-  return /OR-NCC-07-\d{6}/.exec(receiptNo)?.[0] ?? "";
+  return new RegExp(`OR-NCC-${SERIES}-\\d{6}`).exec(receiptNo)?.[0] ?? "";
 }
 
 test("enroll, sign in offline, sell, and keep everything after a restart", async () => {
@@ -84,15 +91,20 @@ test("enroll, sign in offline, sell, and keep everything after a restart", async
     await page.getByRole("button", { name: "Set up counter" }).click();
 
     // Sign in against the synced password hash; the footer names the counter.
-    await expect(page.getByRole("heading", { name: "Sign in to your counter" })).toBeVisible();
-    await expect(page.getByText(/Counter 7 · NCCC Market · Last synced/)).toBeVisible();
+    // Downloading the branch's data can take a while on a slow machine.
+    await expect(page.getByRole("heading", { name: "Sign in to your counter" })).toBeVisible({
+      timeout: 60_000,
+    });
+    await expect(
+      page.getByText(`Counter ${SERIES} · NCCC Market · Last synced`, { exact: false }),
+    ).toBeVisible();
     await page.getByLabel("Username").fill("cashier1");
     await page.getByLabel("Password").fill("pos");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.waitForURL(/\/pos\/?$/);
 
-    expect(await sellOne(page, "biogesic")).toBe("OR-NCC-07-000001");
-    expect(await sellOne(page, "biogesic")).toBe("OR-NCC-07-000002");
+    expect(await sellOne(page, "biogesic")).toBe(`OR-NCC-${SERIES}-000001`);
+    expect(await sellOne(page, "biogesic")).toBe(`OR-NCC-${SERIES}-000002`);
     expect(errors).toEqual([]);
     await app.close();
 
@@ -104,7 +116,7 @@ test("enroll, sign in offline, sell, and keep everything after a restart", async
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.waitForURL(/\/pos\/?$/);
     await expect(page.getByText(/2 (changes|sales) waiting|2 queued/).first()).toBeVisible();
-    expect(await sellOne(page, "biogesic")).toBe("OR-NCC-07-000003");
+    expect(await sellOne(page, "biogesic")).toBe(`OR-NCC-${SERIES}-000003`);
     expect(errors).toEqual([]);
     await app.close();
   } finally {
