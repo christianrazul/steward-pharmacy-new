@@ -66,5 +66,10 @@ export function nextjsConfig(tsconfigRootDir) {
       files: ["src/**/*.{ts,tsx}"],
       rules: dataAccessRestrictions,
     },
+    {
+      // Config files and test servers run in Node, not the browser.
+      files: ["**/*.mjs", "*.config.ts", "e2e/**/*.ts"],
+      languageOptions: { globals: { ...globals.node } },
+    },
   ];
 }

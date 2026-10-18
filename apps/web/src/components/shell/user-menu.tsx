@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { can, roleLabel } from "@steward/domain";
 import {
   CheckIcon,
@@ -13,6 +14,7 @@ import {
   UserRoundIcon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, initialsOf } from "@steward/ui/components/avatar";
 import {
   DropdownMenu,
@@ -26,11 +28,13 @@ import {
 import { Kbd } from "@steward/ui/components/kbd";
 import { cn } from "@steward/ui/lib/utils";
 
+import { useDataClient } from "@/data/provider";
 import { env } from "@/env";
-import { DEMO_ADMIN, DEMO_CASHIER } from "@/fixtures/users";
-import { useSession } from "@/lib/session";
+import { DEMO_ACCOUNTS } from "@/lib/demo-accounts";
+import { errorMessage } from "@/lib/errors";
+import { useCurrentUser, useWorkingBranch } from "@/lib/session";
 import { useModifierKeyLabel } from "@/lib/use-modifier-key";
-import { useSessionStore } from "@/stores/session-store";
+import { useBranchStore } from "@/stores/branch-store";
 import { useUiStore } from "@/stores/ui-store";
 
 const THEMES = [
@@ -41,18 +45,31 @@ const THEMES = [
 
 export function UserMenu() {
   const router = useRouter();
-  const { user, branchName } = useSession();
+  const client = useDataClient();
+  const queryClient = useQueryClient();
+  const user = useCurrentUser();
+  const { branchName } = useWorkingBranch();
   const { theme, setTheme } = useTheme();
-  const signIn = useSessionStore((state) => state.signIn);
-  const signOut = useSessionStore((state) => state.signOut);
   const setCommandOpen = useUiStore((state) => state.setCommandOpen);
+  const setWorkingBranchId = useBranchStore((state) => state.setWorkingBranchId);
   const modifier = useModifierKeyLabel();
-  if (!user) return null;
 
   const subtitle =
     user.role === "admin"
       ? roleLabel(user.role, user.position)
       : `${roleLabel(user.role, user.position)} · ${branchName}`;
+
+  async function switchSession(next: () => Promise<unknown>, path: string | null) {
+    try {
+      await next();
+      setWorkingBranchId(null);
+      // Throw away the previous person's data and refetch everything on screen.
+      await queryClient.resetQueries();
+      if (path) router.push(path);
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
+  }
 
   return (
     <DropdownMenu>
@@ -109,17 +126,22 @@ export function UserMenu() {
         {env.NEXT_PUBLIC_DEV_ROLE_SWITCHER && (
           <>
             <DropdownMenuLabel>Preview as (development only)</DropdownMenuLabel>
-            {[DEMO_ADMIN, DEMO_CASHIER].map((demo) => (
+            {DEMO_ACCOUNTS.map((demo) => (
               <DropdownMenuItem
-                key={demo.id}
+                key={demo.username}
                 onSelect={() => {
                   // Stay on this page. If the new role cannot use it, RequirePermission redirects.
-                  signIn(demo);
+                  void switchSession(
+                    () => client.signIn({ username: demo.username, password: demo.password }),
+                    null,
+                  );
                 }}
               >
                 <UserRoundIcon aria-hidden="true" />
-                {roleLabel(demo.role, demo.position)}
-                {user.id === demo.id && <CheckIcon aria-label="Current" className="ml-auto" />}
+                {demo.label}
+                {user.username === demo.username && (
+                  <CheckIcon aria-label="Current" className="ml-auto" />
+                )}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
@@ -127,8 +149,7 @@ export function UserMenu() {
         )}
         <DropdownMenuItem
           onSelect={() => {
-            signOut();
-            router.push("/sign-in");
+            void switchSession(() => client.signOut(), "/sign-in");
           }}
         >
           <LogOutIcon aria-hidden="true" />
