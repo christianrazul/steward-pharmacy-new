@@ -23,6 +23,7 @@ import {
   allocationError,
   InvalidTransitionError,
   assertTransition as assertDomainTransition,
+  canAllocate,
   bucketIndex,
   branchSchema,
   can,
@@ -935,7 +936,7 @@ export class FakeDataClient implements DataClient {
     this.requireOnline("Approving a request");
     const input = this.parse(requestApproveSchema, raw);
     const row = this.findRequest(user, id);
-    assertTransition(row.status, "approved");
+    if (!canAllocate(row.status)) assertTransition(row.status, "approved");
     const detail = this.requestDetail(row);
     const lines = detail.items.map((item) => ({
       productId: item.productId,
