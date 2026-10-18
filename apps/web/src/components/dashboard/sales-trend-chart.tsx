@@ -22,6 +22,7 @@ export function SalesTrendChart({ data, currentLabel }: { data: Point[]; current
     <ChartContainer
       config={config}
       className="aspect-auto h-[260px] w-full"
+      role="img"
       aria-label="Sales trend chart"
     >
       <AreaChart data={data} margin={{ top: 12, right: 24, left: 4, bottom: 0 }}>
