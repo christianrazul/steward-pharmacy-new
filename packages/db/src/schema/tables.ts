@@ -72,6 +72,8 @@ export const mutationStatusEnum = pgEnum("mutation_status", ["applied", "rejecte
 
 const money = (name: string) => bigint(name, { mode: "number" });
 const timestamptz = (name: string) => timestamp(name, { withTimezone: true, mode: "string" });
+/** Better Auth writes Date objects to its own tables (sessions, accounts, verifications). */
+const authTimestamp = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 
 /** Columns every synced table carries. */
 function syncColumns() {
@@ -166,11 +168,11 @@ export const sessions = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    expiresAt: timestamptz("expires_at").notNull(),
+    expiresAt: authTimestamp("expires_at").notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
-    createdAt: timestamptz("created_at").notNull().defaultNow(),
-    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+    createdAt: authTimestamp("created_at").notNull().defaultNow(),
+    updatedAt: authTimestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [uniqueIndex("sessions_token_key").on(t.token), index("sessions_user_idx").on(t.userId)],
 );
@@ -189,11 +191,11 @@ export const accounts = pgTable(
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
     idToken: text("id_token"),
-    accessTokenExpiresAt: timestamptz("access_token_expires_at"),
-    refreshTokenExpiresAt: timestamptz("refresh_token_expires_at"),
+    accessTokenExpiresAt: authTimestamp("access_token_expires_at"),
+    refreshTokenExpiresAt: authTimestamp("refresh_token_expires_at"),
     scope: text("scope"),
-    createdAt: timestamptz("created_at").notNull().defaultNow(),
-    updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+    createdAt: authTimestamp("created_at").notNull().defaultNow(),
+    updatedAt: authTimestamp("updated_at").notNull().defaultNow(),
     serverVersion: bigint("server_version", { mode: "number" }).notNull().default(0),
   },
   (t) => [
@@ -207,9 +209,9 @@ export const verifications = pgTable("verifications", {
   id: uuid("id").primaryKey(),
   identifier: text("identifier").notNull(),
   value: text("value").notNull(),
-  expiresAt: timestamptz("expires_at").notNull(),
-  createdAt: timestamptz("created_at").notNull().defaultNow(),
-  updatedAt: timestamptz("updated_at").notNull().defaultNow(),
+  expiresAt: authTimestamp("expires_at").notNull(),
+  createdAt: authTimestamp("created_at").notNull().defaultNow(),
+  updatedAt: authTimestamp("updated_at").notNull().defaultNow(),
 });
 
 export const devices = pgTable(

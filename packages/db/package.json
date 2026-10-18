@@ -10,7 +10,8 @@
     "./password": "./src/password.ts",
     "./postgres": "./src/client/postgres.ts",
     "./pglite": "./src/client/pglite.ts",
-    "./migrations-path": "./src/migrations-path.ts"
+    "./migrations-path": "./src/migrations-path.ts",
+    "./testing": "./src/testing/engines.ts"
   },
   "scripts": {
     "lint": "eslint .",
