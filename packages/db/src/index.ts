@@ -6,3 +6,5 @@ export * from "./queries/settings";
 export * from "./queries/stock";
 export * from "./queries/counters";
 export { seedDatabase, settingsRows, placeholderEmail } from "./seed/seed";
+export * from "./raw";
+export { connectPostgres } from "./client/postgres";

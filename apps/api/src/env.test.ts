@@ -4,6 +4,7 @@ import { parseEnv } from "./env";
 const valid = {
   DATABASE_URL: "postgres://steward:secret@localhost:5432/steward",
   WEB_ORIGIN: "http://localhost:3000",
+  BETTER_AUTH_SECRET: "a-secret-that-is-at-least-32-characters",
 };
 
 describe("parseEnv", () => {
@@ -12,12 +13,13 @@ describe("parseEnv", () => {
       ...valid,
       NODE_ENV: "development",
       PORT: 4000,
+      PUBLIC_API_URL: "http://localhost:4000",
       LOG_LEVEL: "info",
     });
   });
 
   it("fails fast and names every missing variable", () => {
-    expect(() => parseEnv({})).toThrow(/DATABASE_URL[\s\S]*WEB_ORIGIN/);
+    expect(() => parseEnv({})).toThrow(/DATABASE_URL[\s\S]*WEB_ORIGIN[\s\S]*BETTER_AUTH_SECRET/);
   });
 
   it("rejects a non-Postgres database URL", () => {

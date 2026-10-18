@@ -5,7 +5,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./test-vectors": "./src/test-vectors.ts"
+    "./test-vectors": "./src/test-vectors.ts",
+    "./view-models": "./src/view-models.ts",
+    "./view-models-errors": "./src/view-models-errors.ts"
   },
   "scripts": {
     "lint": "eslint .",

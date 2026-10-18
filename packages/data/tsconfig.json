@@ -1,4 +1,7 @@
 {
-  "extends": "@steward/config/tsconfig/base.json",
+  "extends": "@steward/config/tsconfig/node.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+  },
   "include": ["src", "*.ts"]
 }
