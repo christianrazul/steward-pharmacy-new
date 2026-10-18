@@ -57,7 +57,7 @@ describe("RemoteClient against the real API", () => {
     client.dispose();
   });
 
-  it("saves settings writes through the API", async () => {
+  it("saves settings and stock writes through the API", async () => {
     const client = new RemoteClient({ baseUrl: "http://api.test", fetch: browserFetch() });
     await client.signIn({ username: "admin", password: "admin" });
     const settings = await client.updateSettings({
@@ -77,6 +77,16 @@ describe("RemoteClient against the real API", () => {
     expect(enrollment.code).toHaveLength(8);
     const revoked = await client.revokeDevice(enrollment.device.id);
     expect(revoked.revokedAt).not.toBeNull();
+    const received = await client.receiveStock({
+      id: "01900000-0000-7000-8000-000000000001",
+      product: { kind: "existing", productId: t.data.products[0]?.id ?? "" },
+      branchId: branch?.id ?? "",
+      batchNo: "RC-0001",
+      qty: 12,
+      expiryDate: "2030-12-31",
+      today: "2026-10-18",
+    });
+    expect(received).toMatchObject({ qty: 12, toppedUp: false });
     await client.signOut();
   });
 
