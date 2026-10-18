@@ -19,6 +19,7 @@ import { reportRoutes } from "./routes/reports";
 import { requestRoutes } from "./routes/requests";
 import { sessionRoutes } from "./routes/session";
 import { settingsRoutes } from "./routes/settings";
+import { syncRoutes } from "./routes/sync";
 
 export interface AppDeps {
   env: Pick<Env, "WEB_ORIGIN">;
@@ -49,7 +50,8 @@ export function createApp({ env, logger, db, auth, now = () => new Date() }: App
   app.use(
     cors({ origin: (origin) => (origin === env.WEB_ORIGIN ? origin : null), credentials: true }),
   );
-  app.use(requireSameOrigin(env.WEB_ORIGIN));
+  // Enrollment uses a one-time code, not cookies, and comes from the desktop app.
+  app.use(requireSameOrigin(env.WEB_ORIGIN, ["/devices/enroll"]));
 
   app.use(async (c, next) => {
     c.set("db", db);
@@ -93,7 +95,8 @@ export function createApp({ env, logger, db, auth, now = () => new Date() }: App
     .route("/", reportRoutes)
     .route("/", posRoutes)
     .route("/", peopleRoutes)
-    .route("/", settingsRoutes);
+    .route("/", settingsRoutes)
+    .route("/", syncRoutes);
 
   return routes;
 }

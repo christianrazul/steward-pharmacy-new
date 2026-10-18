@@ -7,6 +7,8 @@ import { TooltipProvider } from "@steward/ui/components/tooltip";
 
 import { DataProvider } from "@/data/provider";
 
+import { DesktopGate } from "./desktop-gate";
+
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider
@@ -18,6 +20,7 @@ export function Providers({ children }: { children: ReactNode }) {
     >
       <DataProvider>
         <TooltipProvider delayDuration={200}>
+          <DesktopGate />
           {children}
           <Toaster />
         </TooltipProvider>

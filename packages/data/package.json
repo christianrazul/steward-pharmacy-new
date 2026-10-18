@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./fake": "./src/fake/index.ts",
-    "./remote": "./src/remote/index.ts"
+    "./remote": "./src/remote/index.ts",
+    "./local": "./src/local/index.ts"
   },
   "scripts": {
     "lint": "eslint .",

@@ -135,6 +135,11 @@ export async function deleteBranch(ctx: ServiceContext, id: string): Promise<voi
     .where(and(eq(schema.branches.isCentral, true), isNull(schema.branches.deletedAt)));
   if (!central) throw invalid("Set up a central branch before removing others.");
   await ctx.db.transaction(async (tx) => {
+    // Re-stamp the moved staff's password rows so central's counters pull them.
+    await tx
+      .update(schema.accounts)
+      .set({ updatedAt: ctx.now() })
+      .where(sql`${schema.accounts.userId} in (select id from users where branch_id = ${id})`);
     await tx
       .update(schema.users)
       .set({ branchId: central.id })
@@ -259,10 +264,13 @@ export async function updateStaff(
             }),
       })
       .where(eq(schema.users.id, id));
-    if (passwordHash !== null) {
+    // A new password, or a move to another branch (whose counters need the hash), re-stamps
+    // the password row so devices pull it.
+    const movedBranch = !isAdminRow && before.branchId !== input.branchId;
+    if (passwordHash !== null || movedBranch) {
       await tx
         .update(schema.accounts)
-        .set({ password: passwordHash, updatedAt: ctx.now() })
+        .set({ ...(passwordHash === null ? {} : { password: passwordHash }), updatedAt: ctx.now() })
         .where(and(eq(schema.accounts.userId, id), eq(schema.accounts.providerId, "credential")));
     }
     await audit(tx, ctx, {
@@ -435,7 +443,11 @@ async function issueEnrollment(ctx: ServiceContext, deviceId: string): Promise<D
   const expiresAt = new Date(ctx.now().getTime() + ENROLLMENT_MINUTES * 60_000).toISOString();
   await ctx.db
     .update(schema.devices)
-    .set({ enrollmentCodeHash: sha256(code), enrollmentExpiresAt: expiresAt })
+    .set({
+      enrollmentCodeHash: sha256(code),
+      enrollmentExpiresAt: expiresAt,
+      enrolledByUserId: ctx.actor?.kind === "user" ? ctx.actor.user.id : null,
+    })
     .where(eq(schema.devices.id, deviceId));
   const device = await deviceById(ctx, deviceId);
   if (!device) throw notFound("That device no longer exists.");

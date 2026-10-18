@@ -1,0 +1,36 @@
+# Windows counter installer. Built on Windows (CI job "desktop installer").
+appId: ph.stewardpharmacy.pos
+productName: Steward Pharmacy
+artifactName: steward-pharmacy-setup-${version}.${ext}
+# argon2's native binding is a platform package; package.json lists the Windows
+# (and macOS, for local testing) ones as optionalDependencies so they are bundled.
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**
+  - package.json
+  - "!dist/**/*.map"
+extraResources:
+  # The same static web build Caddy serves, and the database migrations.
+  - from: ../web/out
+    to: web
+  - from: ../../packages/db/drizzle
+    to: migrations
+asarUnpack:
+  - node_modules/@electric-sql/pglite/**
+  - node_modules/@node-rs/**
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: true
+  allowToChangeInstallationDirectory: false
+  createDesktopShortcut: always
+  shortcutName: Steward Pharmacy
+publish:
+  # The update feed lives on the Steward server (see docs/deploy.md).
+  provider: generic
+  url: ${env.STEWARD_UPDATE_URL}
