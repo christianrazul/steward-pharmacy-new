@@ -18,7 +18,10 @@
     "format:check": "prettier --check .",
     "db:up": "docker compose -f docker-compose.dev.yml up -d",
     "db:down": "docker compose -f docker-compose.dev.yml down",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:migrate": "pnpm --filter @steward/db migrate",
+    "db:seed": "pnpm --filter @steward/db seed",
+    "db:generate": "pnpm --filter @steward/db generate"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -33,7 +36,8 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild"
+      "esbuild",
+      "@node-rs/argon2"
     ]
   }
 }

@@ -24,6 +24,8 @@ pnpm install
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 pnpm db:up
+pnpm db:migrate
+pnpm db:seed
 pnpm dev
 ```
 
@@ -50,6 +52,9 @@ Run from the repo root.
 | `pnpm test:e2e`               | End-to-end tests (Playwright). First run: `pnpm --filter @steward/web exec playwright install chromium` |
 | `pnpm format`                 | Prettier, writing changes                                                                               |
 | `pnpm db:up` / `pnpm db:down` | Starts or stops the local Postgres 16 container                                                         |
+| `pnpm db:migrate`             | Applies migrations (`-- --pglite <dir>` for a PGlite folder)                                            |
+| `pnpm db:seed`                | Loads the mockup's demo data into an empty database                                                     |
+| `pnpm db:generate`            | Writes a new migration after a schema change                                                            |
 
 A pre-commit hook (Husky and lint-staged) runs ESLint and Prettier on staged files.
 

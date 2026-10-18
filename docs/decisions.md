@@ -276,3 +276,57 @@ the first or last hour.
 
 Search matches when every word typed appears in the brand, generic name, SKU or strength, so
 "biogesic 500" finds Biogesic 500mg.
+
+## Milestone 4
+
+### One schema, two engines
+
+`packages/db/src/schema` is the only schema. `drizzle-kit generate` writes SQL migrations to
+`packages/db/drizzle`, and the same files run on PostgreSQL (`migratePostgresDb`) and PGlite
+(`migratePgliteDb`). Query modules take the `Db` type, which is satisfied by both drivers and by
+transactions.
+
+### What the database enforces
+
+- `server_version`: a trigger on every synced table stamps it from one sequence on each insert
+  and update, and bumps `updated_at` on update. While a desktop applies a pull it sets
+  `steward.applying_pull = 'on'` for that transaction, and the trigger keeps the server's value.
+- Append-only tables reject updates and deletes: `stock_movements`, `sales`, `sale_lines`,
+  `sale_line_batches`, `stock_request_events` and `audit_log`. Mistakes are fixed with new rows.
+- Check constraints repeat the key domain rules: price above zero, a GCash reference of 13 digits,
+  cash received at least the total, line total equal to quantity times price, closing time after
+  opening, at least one open day, PRC license for pharmacists.
+- At most one live central branch, by a partial unique index.
+- On hand comes from views (`batch_on_hand`, `product_on_hand`) over the ledger. No stored
+  quantities.
+
+### Better Auth tables
+
+`users`, `sessions`, `accounts` and `verifications` follow Better Auth's model. `users.full_name`
+is Better Auth's `name`. Its `email` is required and unique, but staff often have no email, so it
+holds an internal placeholder (`<id>@users.invalid`, a reserved domain) and the real address is
+in `contact_email`. Password hashes are argon2id (`packages/db/src/password.ts`) in
+`accounts.password`; devices sync them for offline sign-in.
+
+### Counters
+
+Receipt and request numbers come from counter rows updated inside the writing transaction
+(`INSERT … ON CONFLICT DO UPDATE … RETURNING`). Concurrent sales wait on the row lock, and a
+rolled-back sale returns its number, so sequences have no gaps.
+
+### Desktop-only tables
+
+`outbox`, `sync_state`, `local_counters` and `sign_in_attempts` are part of the shared migrations
+so both engines have one schema. The server never writes to them.
+
+### Real database tests
+
+Database tests run on PGlite every time, and also on PostgreSQL when `TEST_DATABASE_URL` is set.
+CI sets it with a `postgres:16` service. Locally, start the compose database and run, for example:
+`TEST_DATABASE_URL=postgres://steward:steward@localhost:5432/postgres pnpm test`. Each test file gets
+its own throwaway database.
+
+### Local port
+
+`docker-compose.dev.yml` reads `POSTGRES_PORT` (default 5432), for machines that already run a
+Postgres on 5432.

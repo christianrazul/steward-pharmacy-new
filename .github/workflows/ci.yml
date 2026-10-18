@@ -17,8 +17,24 @@ jobs:
     name: Lint, typecheck, test and build
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16.15-alpine
+        env:
+          POSTGRES_USER: steward
+          POSTGRES_PASSWORD: steward
+          POSTGRES_DB: steward
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U steward"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     env:
       NEXT_PUBLIC_API_URL: http://localhost:4000
+      # Database tests run on PGlite and, with this set, on real PostgreSQL too.
+      TEST_DATABASE_URL: postgres://steward:steward@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v7
 
