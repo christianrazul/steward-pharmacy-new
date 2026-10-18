@@ -42,19 +42,20 @@ Both apps validate their environment on start and exit with a list of what is mi
 
 Run from the repo root.
 
-| Script                        | What it does                                                                                            |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `pnpm dev`                    | Starts the web app and the API in watch mode                                                            |
-| `pnpm build`                  | Static web export to `apps/web/out`, API bundle to `apps/api/dist`                                      |
-| `pnpm lint`                   | ESLint in every workspace                                                                               |
-| `pnpm typecheck`              | TypeScript (strict) in every workspace                                                                  |
-| `pnpm test`                   | Unit tests (Vitest)                                                                                     |
-| `pnpm test:e2e`               | End-to-end tests (Playwright). First run: `pnpm --filter @steward/web exec playwright install chromium` |
-| `pnpm format`                 | Prettier, writing changes                                                                               |
-| `pnpm db:up` / `pnpm db:down` | Starts or stops the local Postgres 16 container                                                         |
-| `pnpm db:migrate`             | Applies migrations (`-- --pglite <dir>` for a PGlite folder)                                            |
-| `pnpm db:seed`                | Loads the mockup's demo data into an empty database                                                     |
-| `pnpm db:generate`            | Writes a new migration after a schema change                                                            |
+| Script                                          | What it does                                                                                            |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                                      | Starts the web app and the API in watch mode                                                            |
+| `pnpm build`                                    | Static web export to `apps/web/out`, API bundle to `apps/api/dist`                                      |
+| `pnpm lint`                                     | ESLint in every workspace                                                                               |
+| `pnpm typecheck`                                | TypeScript (strict) in every workspace                                                                  |
+| `pnpm test`                                     | Unit tests (Vitest)                                                                                     |
+| `pnpm test:e2e`                                 | End-to-end tests (Playwright). First run: `pnpm --filter @steward/web exec playwright install chromium` |
+| `pnpm --filter @steward/web test:e2e:fullstack` | Full-stack end-to-end tests: the web build against the real API on a fresh seeded in-memory database    |
+| `pnpm format`                                   | Prettier, writing changes                                                                               |
+| `pnpm db:up` / `pnpm db:down`                   | Starts or stops the local Postgres 16 container                                                         |
+| `pnpm db:migrate`                               | Applies migrations (`-- --pglite <dir>` for a PGlite folder)                                            |
+| `pnpm db:seed`                                  | Loads the mockup's demo data into an empty database                                                     |
+| `pnpm db:generate`                              | Writes a new migration after a schema change                                                            |
 
 A pre-commit hook (Husky and lint-staged) runs ESLint and Prettier on staged files.
 

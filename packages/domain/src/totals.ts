@@ -240,6 +240,15 @@ export function discountShortLabel(rule: Pick<DiscountRule, "mode" | "value">): 
   }
 }
 
+/** The label a sale stores, e.g. "Senior / PWD 20%"; null when the discount took nothing off. */
+export function saleDiscountLabel(
+  rule: Pick<DiscountRule, "name" | "mode" | "value"> | null,
+  totals: SaleTotals,
+): string | null {
+  if (rule === null || !discountApplied(totals)) return null;
+  return `${rule.name} ${discountShortLabel(rule)}`;
+}
+
 function trimZeros(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/0+$/, "");
 }

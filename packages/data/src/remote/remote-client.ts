@@ -295,8 +295,8 @@ export class RemoteClient implements DataClient {
 
   // -- writes (connected milestone by milestone) ----------------------------
 
-  createSale(_input: SaleCreateInput): Promise<SaleReceipt> {
-    return this.notYet();
+  createSale(input: SaleCreateInput): Promise<SaleReceipt> {
+    return this.call(() => this.api.sales.$post({ json: input }));
   }
   receiveStock(input: StockReceiveInput): Promise<ReceiveStockResult> {
     return this.call(() => this.api.stock.receive.$post({ json: input }));

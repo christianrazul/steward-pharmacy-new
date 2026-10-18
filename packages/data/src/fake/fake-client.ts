@@ -30,7 +30,7 @@ import {
   daysUntil,
   deviceCreateSchema,
   discountSchema,
-  discountShortLabel,
+  saleDiscountLabel,
   fieldErrors,
   fifoOrder,
   formatManila,
@@ -572,8 +572,7 @@ export class FakeDataClient implements DataClient {
       change: cashReceived === null ? null : cashReceived - totals.total,
       gcashRef: input.payment.method === "gcash" ? input.payment.gcashRef : null,
       discountId: discount?.id ?? null,
-      discountLabel:
-        discount && totals.discount > 0 ? `${discount.name} ${discountShortLabel(discount)}` : null,
+      discountLabel: saleDiscountLabel(discount, totals),
       isVatExemptSale: totals.isVatExemptSale,
       status: "completed",
       lines,
