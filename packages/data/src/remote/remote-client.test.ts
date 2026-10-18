@@ -57,6 +57,29 @@ describe("RemoteClient against the real API", () => {
     client.dispose();
   });
 
+  it("saves settings writes through the API", async () => {
+    const client = new RemoteClient({ baseUrl: "http://api.test", fetch: browserFetch() });
+    await client.signIn({ username: "admin", password: "admin" });
+    const settings = await client.updateSettings({
+      lowStockThreshold: 30,
+      receiptPrefix: "OR",
+      vatRateBp: 1200,
+      vatMode: "inclusive",
+    });
+    expect(settings.lowStockThreshold).toBe(30);
+    const [branch] = await client.listBranches();
+    const enrollment = await client.createDevice({
+      branchId: branch?.id ?? "",
+      label: "Counter 5",
+      receiptSeries: "05",
+      printWidth: 58,
+    });
+    expect(enrollment.code).toHaveLength(8);
+    const revoked = await client.revokeDevice(enrollment.device.id);
+    expect(revoked.revokedAt).not.toBeNull();
+    await client.signOut();
+  });
+
   it("turns API errors into DataErrors with the API's message", async () => {
     const client = new RemoteClient({ baseUrl: "http://api.test", fetch: browserFetch() });
     await client.signIn({ username: "cashier1", password: "pos" });
