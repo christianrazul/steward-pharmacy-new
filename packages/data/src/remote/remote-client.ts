@@ -298,8 +298,8 @@ export class RemoteClient implements DataClient {
   createSale(_input: SaleCreateInput): Promise<SaleReceipt> {
     return this.notYet();
   }
-  receiveStock(_input: StockReceiveInput): Promise<ReceiveStockResult> {
-    return this.notYet();
+  receiveStock(input: StockReceiveInput): Promise<ReceiveStockResult> {
+    return this.call(() => this.api.stock.receive.$post({ json: input }));
   }
   createRequest(_input: StockRequestCreateInput): Promise<StockRequestSummary> {
     return this.notYet();
