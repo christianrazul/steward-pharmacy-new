@@ -45,6 +45,23 @@ async function enrollmentCode(): Promise<string> {
   return ((await res.json()) as { code: string }).code;
 }
 
+/** Receipt numbers the server has for today, as the admin sees them in Sales activity. */
+async function serverReceipts(): Promise<string[]> {
+  const signIn = await fetch(`${API}/session`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: WEB_ORIGIN },
+    body: JSON.stringify({ username: "admin", password: "admin" }),
+  });
+  const cookie = signIn.headers
+    .getSetCookie()
+    .map((value) => value.split(";")[0])
+    .join("; ");
+  const page = (await (
+    await fetch(`${API}/sales?period=today&pageSize=100`, { headers: { cookie } })
+  ).json()) as { rows: { receiptNo: string }[] };
+  return page.rows.map((row) => row.receiptNo);
+}
+
 async function launch(
   userData: string,
 ): Promise<{ app: ElectronApplication; page: Page; errors: string[] }> {
@@ -79,7 +96,7 @@ async function sellOne(page: Page, query: string) {
   return new RegExp(`OR-NCC-${SERIES}-\\d{6}`).exec(receiptNo)?.[0] ?? "";
 }
 
-test("enroll, sign in offline, sell, and keep everything after a restart", async () => {
+test("enroll, sign in, sell, restart, and the sales reach the server", async () => {
   const userData = await mkdtemp(join(tmpdir(), "steward-e2e-"));
   try {
     let { app, page, errors } = await launch(userData);
@@ -115,7 +132,10 @@ test("enroll, sign in offline, sell, and keep everything after a restart", async
     await page.getByLabel("Password").fill("pos");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.waitForURL(/\/pos\/?$/);
-    await expect(page.getByText(/2 (changes|sales) waiting|2 queued/).first()).toBeVisible();
+    // Connected to the server, the counter has already synced both sales.
+    await expect
+      .poll(serverReceipts, { timeout: 30_000 })
+      .toEqual(expect.arrayContaining([`OR-NCC-${SERIES}-000001`, `OR-NCC-${SERIES}-000002`]));
     expect(await sellOne(page, "biogesic")).toBe(`OR-NCC-${SERIES}-000003`);
     expect(errors).toEqual([]);
     await app.close();

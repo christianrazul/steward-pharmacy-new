@@ -9,7 +9,7 @@ import { forbidden, AppError } from "./errors";
  * cookieless paths (device enrollment) are exempt.
  */
 export function requireSameOrigin(
-  webOrigin: string,
+  allowedOrigins: readonly string[],
   cookielessPaths: readonly string[] = [],
 ): MiddlewareHandler {
   return async (c, next) => {
@@ -23,7 +23,10 @@ export function requireSameOrigin(
     if (unsafe && !usesBearer) {
       const origin = c.req.header("origin");
       const fetchSite = c.req.header("sec-fetch-site");
-      if (origin !== webOrigin && fetchSite !== "same-origin") {
+      if (
+        !(origin !== undefined && allowedOrigins.includes(origin)) &&
+        fetchSite !== "same-origin"
+      ) {
         throw forbidden(
           "This request did not come from the Steward Pharmacy app. Reload the page and try again.",
         );

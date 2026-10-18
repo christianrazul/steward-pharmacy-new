@@ -209,7 +209,7 @@ const TABLES: Record<SyncTable, TableSpec> = {
 };
 
 /** Marks the device as seen without changing its server_version (it is bookkeeping, not synced). */
-async function touchDevice(db: Db, deviceId: string, at: string) {
+export async function touchDevice(db: Db, deviceId: string, at: string) {
   await db.transaction(async (tx) => {
     await tx.execute(sql`select set_config('steward.applying_pull', 'on', true)`);
     await tx.update(schema.devices).set({ lastSeenAt: at }).where(eq(schema.devices.id, deviceId));

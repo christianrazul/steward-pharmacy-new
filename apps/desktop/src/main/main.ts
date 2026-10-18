@@ -2,7 +2,15 @@ import { appendFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, protocol, session } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  type IpcMainInvokeEvent,
+  powerMonitor,
+  protocol,
+  session,
+} from "electron";
 import electronUpdater from "electron-updater";
 
 import { DesktopRuntime, toBridgeError } from "../core/runtime";
@@ -103,6 +111,10 @@ async function start() {
     fromApp(event) ? runtime.enroll(serverUrl, code) : toBridgeError(new Error("Untrusted sender")),
   );
   ipcMain.handle("steward:sync-status", (event) => (fromApp(event) ? runtime.syncStatus() : null));
+  // Back online: sync straight away instead of waiting for the next 30-second tick.
+  powerMonitor.on("resume", () => {
+    runtime.sync?.kick();
+  });
   ipcMain.handle("steward:print", async (event, html: unknown) => {
     if (!fromApp(event) || typeof html !== "string" || html.length > 200_000) {
       return toBridgeError(new Error("Untrusted print request"));

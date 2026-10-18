@@ -19,6 +19,7 @@ import type {
 } from "@steward/domain";
 
 import type {
+  AttentionItem,
   BatchDetail,
   Branch,
   CsvExport,
@@ -108,6 +109,9 @@ export interface DataClient {
   createDevice(input: DeviceCreateInput): Promise<DeviceEnrollment>;
   renewEnrollmentCode(id: string): Promise<DeviceEnrollment>;
   revokeDevice(id: string): Promise<Device>;
+  /** Synced changes the server refused or flagged (oversold, total mismatch). */
+  listAttention(): Promise<AttentionItem[]>;
+  resolveAttention(mutationId: string): Promise<void>;
 
   // Sync and connectivity
   getSyncStatus(): SyncStatus;

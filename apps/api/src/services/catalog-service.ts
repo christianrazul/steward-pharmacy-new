@@ -30,7 +30,8 @@ export async function searchProducts(
   const products = await rows<ProductRow & { sellable: number; total: number }>(
     ctx.db,
     sql`with stock as (
-          select product_id, coalesce(sum(on_hand) filter (where expiry_date > ${today}::date), 0)::int as sellable
+          -- Sellable = unexpired batches with stock. An oversold batch (below zero) sells nothing.
+          select product_id, coalesce(sum(on_hand) filter (where expiry_date > ${today}::date and on_hand > 0), 0)::int as sellable
           from batch_on_hand where branch_id = ${query.branchId} group by product_id
         )
         select p.id, p.sku, p.generic_name, p.brand, p.strength, p.form, p.category, p.price_centavos::float8 as price_centavos,
