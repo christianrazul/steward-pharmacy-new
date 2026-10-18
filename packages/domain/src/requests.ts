@@ -21,6 +21,14 @@ export function canTransition(from: RequestStatus, to: RequestStatus): boolean {
   return TRANSITIONS[from].includes(to);
 }
 
+/**
+ * Allocations can be set while pending (approving) and changed while approved,
+ * for when central's stock changed before fulfilment. Changing one stays approved.
+ */
+export function canAllocate(status: RequestStatus): boolean {
+  return status === "pending" || status === "approved";
+}
+
 export class InvalidTransitionError extends Error {
   override name = "InvalidTransitionError";
   constructor(from: RequestStatus, to: RequestStatus) {

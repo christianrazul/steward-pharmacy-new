@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { allocationError, can, suggestedAllocation } from "@steward/domain";
-import type { StockRequestDetail } from "@steward/data";
+import { DataError, type StockRequestDetail } from "@steward/data";
 import { CheckIcon, CircleDashedIcon, TruckIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@steward/ui/components/button";
@@ -61,6 +61,9 @@ function RequestBody({ request, onClose }: { request: StockRequestDetail; onClos
   const user = useCurrentUser();
   const canAct = can(user.role, "stock_requests.review");
   const pending = request.status === "pending";
+  // Approved requests can be re-allocated when central's stock changed before fulfilment.
+  const [editing, setEditing] = useState(false);
+  const allocating = canAct && (pending || editing);
   const [allocation, setAllocation] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       request.items.map((item) => [
@@ -112,9 +115,10 @@ function RequestBody({ request, onClose }: { request: StockRequestDetail; onClos
       {
         onSuccess: () => {
           const units = lines.reduce((sum, line) => sum + line.qtyAllocated, 0);
-          toast.success(`${request.requestNo} approved`, {
-            description: `${int(units)} units allocated to ${request.branchName}`,
-          });
+          toast.success(
+            pending ? `${request.requestNo} approved` : `${request.requestNo} allocation saved`,
+            { description: `${int(units)} units allocated to ${request.branchName}` },
+          );
           onClose();
         },
         onError: (err) => {
@@ -151,11 +155,14 @@ function RequestBody({ request, onClose }: { request: StockRequestDetail; onClos
       },
       onError: (err) => {
         setError(errorMessage(err));
+        // Central no longer has enough: let the admin lower the allocation right here.
+        if (err instanceof DataError && err.code === "conflict") setEditing(true);
       },
     });
   }
 
-  const decision = request.events.find(
+  // The latest decision: a changed allocation adds another "approved" event.
+  const decision = request.events.findLast(
     (event) => event.kind === "approved" || event.kind === "declined",
   );
   const fulfilled = request.events.find((event) => event.kind === "fulfilled");
@@ -216,7 +223,7 @@ function RequestBody({ request, onClose }: { request: StockRequestDetail; onClos
           <span>Product</span>
           <span className="text-right">Asked</span>
           <span className="text-right">At central</span>
-          <span className="text-right">{pending && canAct ? "Send" : "Allocated"}</span>
+          <span className="text-right">{allocating ? "Send" : "Allocated"}</span>
         </div>
         {request.items.map((item) => {
           const value = Number(allocation[item.productId] ?? "0") || 0;
@@ -242,7 +249,7 @@ function RequestBody({ request, onClose }: { request: StockRequestDetail; onClos
               >
                 {int(item.centralSellable)}
               </span>
-              {pending && canAct ? (
+              {allocating ? (
                 <Input
                   className="num h-8 text-right text-[13px]"
                   inputMode="numeric"
@@ -270,7 +277,7 @@ function RequestBody({ request, onClose }: { request: StockRequestDetail; onClos
             {error}
           </div>
         )}
-        {pending && canAct ? (
+        {allocating ? (
           <Field
             label="Note to the branch"
             htmlFor="request-note"
@@ -342,10 +349,33 @@ function RequestBody({ request, onClose }: { request: StockRequestDetail; onClos
               Approve allocation
             </Button>
           </>
+        ) : allocating ? (
+          <>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => {
+                setEditing(false);
+                setError("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button disabled={busy} onClick={onApprove}>
+              <CheckIcon aria-hidden="true" />
+              Save allocation
+            </Button>
+          </>
         ) : canAct && request.status === "approved" ? (
           <>
-            <Button variant="outline" onClick={onClose}>
-              Close
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => {
+                setEditing(true);
+              }}
+            >
+              Change allocation
             </Button>
             <Button disabled={busy} onClick={onFulfill}>
               <TruckIcon aria-hidden="true" />

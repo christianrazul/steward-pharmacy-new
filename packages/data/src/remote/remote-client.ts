@@ -173,10 +173,6 @@ export class RemoteClient implements DataClient {
     throw new DataError("unknown", "Something went wrong on the server. Try again in a moment.");
   }
 
-  private notYet(): never {
-    throw new DataError("unknown", "This action is not connected to the server yet.");
-  }
-
   getSyncStatus(): SyncStatus {
     return this.status;
   }
@@ -293,7 +289,7 @@ export class RemoteClient implements DataClient {
     return this.call(() => this.api.devices.$get());
   }
 
-  // -- writes (connected milestone by milestone) ----------------------------
+  // -- writes ----------------------------------------------------------------
 
   createSale(input: SaleCreateInput): Promise<SaleReceipt> {
     return this.call(() => this.api.sales.$post({ json: input }));
@@ -301,18 +297,19 @@ export class RemoteClient implements DataClient {
   receiveStock(input: StockReceiveInput): Promise<ReceiveStockResult> {
     return this.call(() => this.api.stock.receive.$post({ json: input }));
   }
-  createRequest(_input: StockRequestCreateInput): Promise<StockRequestSummary> {
-    return this.notYet();
+  createRequest(input: StockRequestCreateInput): Promise<StockRequestSummary> {
+    return this.call(() => this.api.requests.$post({ json: input }));
   }
-  approveRequest(_id: string, _input: RequestApproveInput): Promise<StockRequestDetail> {
-    return this.notYet();
+  approveRequest(id: string, input: RequestApproveInput): Promise<StockRequestDetail> {
+    return this.call(() => this.api.requests[":id"].approve.$post({ param: { id }, json: input }));
   }
-  declineRequest(_id: string, _input: RequestDeclineInput): Promise<StockRequestDetail> {
-    return this.notYet();
+  declineRequest(id: string, input: RequestDeclineInput): Promise<StockRequestDetail> {
+    return this.call(() => this.api.requests[":id"].decline.$post({ param: { id }, json: input }));
   }
-  fulfillRequest(_id: string): Promise<StockRequestDetail> {
-    return this.notYet();
+  fulfillRequest(id: string): Promise<StockRequestDetail> {
+    return this.call(() => this.api.requests[":id"].fulfill.$post({ param: { id } }));
   }
+
   // -- settings (admins) ----------------------------------------------------
 
   updateSettings(input: SettingsInput): Promise<Settings> {
