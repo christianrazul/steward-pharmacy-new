@@ -13,6 +13,7 @@ import type { Logger } from "./logger";
 import { catalogRoutes } from "./routes/catalog";
 import { inventoryRoutes } from "./routes/inventory";
 import { peopleRoutes } from "./routes/people";
+import { posRoutes } from "./routes/pos";
 import { referenceRoutes } from "./routes/reference";
 import { reportRoutes } from "./routes/reports";
 import { requestRoutes } from "./routes/requests";
@@ -90,6 +91,7 @@ export function createApp({ env, logger, db, auth, now = () => new Date() }: App
     .route("/", inventoryRoutes)
     .route("/", requestRoutes)
     .route("/", reportRoutes)
+    .route("/", posRoutes)
     .route("/", peopleRoutes)
     .route("/", settingsRoutes);
 
