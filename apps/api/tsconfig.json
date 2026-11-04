@@ -1,0 +1,4 @@
+{
+  "extends": "@steward/config/tsconfig/node.json",
+  "include": ["src", "*.ts"]
+}
