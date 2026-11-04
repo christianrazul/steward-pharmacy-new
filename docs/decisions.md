@@ -427,3 +427,32 @@ revoked device is never re-enabled; add it again as a new device.
 Forms validate with the domain schemas and send the parsed value; the API validates it again.
 Optional text fields (email, address, PRC license) accept `null` as well as blank text, so a
 parsed value parses again unchanged. A domain test covers this.
+
+## Milestone 7
+
+### Add stock on the server
+
+`POST /stock/receive` (`apps/api/src/services/stock-service.ts`) is admin-only
+(`inventory.add_stock`), matching the mockup, where staff have no Add stock button. In one
+transaction it creates the product (for a new product), creates the batch or finds the existing
+one for the same product, branch and batch number, and writes one `receive` movement. Batch
+numbers are stored in upper case, so `ab-12` tops up `AB-12`.
+
+- **Expiry** is checked against today in Manila on the server. The `today` field the client
+  sends is only used for the client's own check.
+- **Same batch number, different expiry** is refused and names the expiry on file, because it
+  almost always means a typo.
+- **Retries**: the client generates the receipt id once per opened sheet. A repeated id returns
+  the original result and receives nothing. The same id will make `stock.receive` idempotent for
+  sync in Milestone 12.
+- **Concurrency**: the batch insert uses `ON CONFLICT DO NOTHING` and then locks the row, so two
+  receipts of the same new batch at once both count. New SKUs (`PS-1001` onwards) are issued under
+  a transaction-scoped advisory lock.
+- New products get an audit row. Stock movements are their own record, so receipts are not
+  audited twice.
+
+### Expired stock
+
+On hand in Inventory includes expired batches, because the stock is physically there and needs
+pulling. Expired batches are flagged in the batch rows and never marked "sells next". POS sellable
+counts only unexpired batches. A batch counts as expired on its expiry date.

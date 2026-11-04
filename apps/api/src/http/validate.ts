@@ -21,3 +21,14 @@ export function validate<Target extends keyof ValidationTargets, Schema extends 
     }
   });
 }
+
+/** Parses a value inside a service (for checks that need server-side facts such as today's date). */
+export function parseOrInvalid<Schema extends z.ZodType>(
+  schema: Schema,
+  value: unknown,
+): z.output<Schema> {
+  const result = schema.safeParse(value);
+  if (result.success) return result.data;
+  const fields = fieldErrors(result.error);
+  throw invalid(Object.values(fields)[0] ?? "Check the highlighted fields.", fields);
+}
