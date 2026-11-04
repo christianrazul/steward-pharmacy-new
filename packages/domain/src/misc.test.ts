@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   allocationError,
   assertTransition,
+  canAllocate,
   canTransition,
   formatRequestNo,
   InvalidTransitionError,
@@ -33,6 +34,10 @@ describe("stock request state machine", () => {
     expect(canTransition("pending", "fulfilled")).toBe(false);
     expect(canTransition("declined", "approved")).toBe(false);
     expect(canTransition("fulfilled", "approved")).toBe(false);
+    expect(canAllocate("pending")).toBe(true);
+    expect(canAllocate("approved")).toBe(true);
+    expect(canAllocate("declined")).toBe(false);
+    expect(canAllocate("fulfilled")).toBe(false);
     expect(() => {
       assertTransition("approved", "declined");
     }).toThrow(InvalidTransitionError);

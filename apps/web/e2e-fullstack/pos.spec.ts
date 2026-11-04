@@ -1,13 +1,7 @@
 import type { Page } from "@playwright/test";
 
 import { expect, test } from "../e2e/fixtures";
-
-async function signIn(page: Page, username: string, password: string) {
-  await page.goto("/sign-in");
-  await page.getByLabel("Username").fill(username);
-  await page.getByLabel("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
-}
+import { signIn } from "./helpers";
 
 async function addToCart(page: Page, query: string, name: RegExp) {
   const search = page.getByRole("textbox", { name: "Search products" });
@@ -21,8 +15,7 @@ async function addToCart(page: Page, query: string, name: RegExp) {
 
 test.describe("selling for real", () => {
   test.beforeEach(async ({ page }) => {
-    await signIn(page, "cashier1", "pos");
-    await page.waitForURL(/\/pos\/?$/);
+    await signIn(page, "cashier1");
   });
 
   test("a cash sale is saved with a web receipt number", async ({ page }) => {
@@ -68,8 +61,7 @@ test.describe("selling for real", () => {
 });
 
 test("the admin sees today's sales in Sales activity", async ({ page }) => {
-  await signIn(page, "admin", "admin");
-  await page.waitForURL(/\/dashboard\/?$/);
+  await signIn(page, "admin");
   await page.goto("/activity");
   await expect(page.getByRole("row", { name: /-W-000003/ })).toBeVisible();
 });
