@@ -85,8 +85,11 @@ jobs:
       - name: Install Playwright browser
         run: pnpm --filter @steward/web exec playwright install --with-deps chromium
 
-      - name: End-to-end tests
+      - name: End-to-end tests (UI on demo data)
         run: pnpm test:e2e
+
+      - name: End-to-end tests (full stack, real API)
+        run: pnpm --filter @steward/web test:e2e:fullstack
 
       - name: Upload report on failure
         if: failure()
