@@ -8,23 +8,28 @@ import { Button } from "@steward/ui/components/button";
 import { Kbd } from "@steward/ui/components/kbd";
 import { SyncPill } from "@steward/ui/components/sync-pill";
 
+import { useSyncStatus } from "@/data/hooks";
+import { useDataClient } from "@/data/provider";
 import { env } from "@/env";
 import { navItemForPath } from "@/lib/nav";
-import { useSession } from "@/lib/session";
+import { useCurrentUser, useWorkingBranch } from "@/lib/session";
 import { setSidebarCollapsed, useSidebarCollapsed } from "@/lib/sidebar-collapse";
 import { useModifierKeyLabel } from "@/lib/use-modifier-key";
-import { useConnectivityStore } from "@/stores/connectivity-store";
 import { useUiStore } from "@/stores/ui-store";
 
 export function AppHeader() {
   const pathname = usePathname();
-  const { user, branchName } = useSession();
+  const client = useDataClient();
+  const user = useCurrentUser();
+  const { branchName } = useWorkingBranch();
   const collapsed = useSidebarCollapsed();
   const { resolvedTheme, setTheme } = useTheme();
   const modifier = useModifierKeyLabel();
   const setMobileNavOpen = useUiStore((state) => state.setMobileNavOpen);
   const setCommandOpen = useUiStore((state) => state.setCommandOpen);
-  const { online, syncing, queued, goOffline, reconnect } = useConnectivityStore();
+  const { online, syncing, queued } = useSyncStatus();
+  const canSimulate =
+    env.NEXT_PUBLIC_DEV_ROLE_SWITCHER && client.simulateConnectivity !== undefined;
   const pageTitle = navItemForPath(pathname)?.label ?? "";
 
   return (
@@ -65,7 +70,7 @@ export function AppHeader() {
         </ol>
       </nav>
 
-      {user && can(user.role, "command_palette.open") ? (
+      {can(user.role, "command_palette.open") ? (
         <button
           type="button"
           aria-label="Search"
@@ -85,15 +90,11 @@ export function AppHeader() {
       <SyncPill
         state={syncing ? "syncing" : online ? "synced" : "offline"}
         queued={queued}
-        disabled={!env.NEXT_PUBLIC_DEV_ROLE_SWITCHER || syncing}
-        title={
-          env.NEXT_PUBLIC_DEV_ROLE_SWITCHER
-            ? online
-              ? "Simulate losing connection"
-              : "Reconnect"
-            : undefined
-        }
-        onClick={online ? goOffline : reconnect}
+        disabled={!canSimulate || syncing}
+        title={canSimulate ? (online ? "Simulate losing connection" : "Reconnect") : undefined}
+        onClick={() => {
+          client.simulateConnectivity?.(!online);
+        }}
       />
       <Button
         variant="ghost"

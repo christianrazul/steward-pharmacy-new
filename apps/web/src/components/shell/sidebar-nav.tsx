@@ -6,19 +6,9 @@ import { can } from "@steward/domain";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@steward/ui/components/tooltip";
 import { cn } from "@steward/ui/lib/utils";
 
-import { BRANCHES } from "@/fixtures/branches";
+import { useRequests } from "@/data/hooks";
 import { NAV_GROUPS, normalizePath, type NavItem } from "@/lib/nav";
-import { useSessionStore } from "@/stores/session-store";
-
-/** Pending stock requests the signed-in person should see. Static fixture data until Milestone 9. */
-function usePendingRequestCount(): number {
-  const user = useSessionStore((state) => state.user);
-  if (!user) return 0;
-  const visible = can(user.role, "stock_requests.review")
-    ? BRANCHES
-    : BRANCHES.filter((branch) => branch.id === user.branchId);
-  return visible.reduce((total, branch) => total + branch.pendingRequests, 0);
-}
+import { useCurrentUser } from "@/lib/session";
 
 function NavLink({
   item,
@@ -84,9 +74,9 @@ export function SidebarNav({
   onNavigate?: () => void;
 }) {
   const pathname = normalizePath(usePathname());
-  const user = useSessionStore((state) => state.user);
-  const pendingRequests = usePendingRequestCount();
-  if (!user) return null;
+  const user = useCurrentUser();
+  const { data: requests } = useRequests({ branchId: null, status: "pending" });
+  const pending = requests?.pending.count ?? 0;
 
   return (
     <nav aria-label="Main" className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-2">
@@ -103,7 +93,7 @@ export function SidebarNav({
                 key={item.href}
                 item={item}
                 active={pathname === item.href}
-                count={item.href === "/requests" ? pendingRequests : 0}
+                count={item.href === "/requests" ? pending : 0}
                 withTooltip={withTooltips}
                 onNavigate={onNavigate}
               />
