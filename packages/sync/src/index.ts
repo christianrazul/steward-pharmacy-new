@@ -117,6 +117,19 @@ export const syncedSaleSchema = saleCreateSchema.extend({
   }),
   /** Unit prices the device charged per product. */
   unitPrices: z.record(z.string(), z.int().min(0)),
+  /** What the counter charged and printed. Stored as is; the server flags a mismatch, never rewrites. */
+  totals: z.object({
+    subtotal: z.int().min(0),
+    discount: z.int().min(0),
+    vat: z.int().min(0),
+    vatable: z.int().min(0),
+    nonVat: z.int().min(0),
+    vatExemptRemoved: z.int().min(0),
+    total: z.int().min(0),
+    itemCount: z.int().min(1),
+    discountLabel: z.string().max(120).nullable(),
+    isVatExemptSale: z.boolean(),
+  }),
 });
 export type SyncedSale = z.infer<typeof syncedSaleSchema>;
 
@@ -135,8 +148,12 @@ export const pushRequestSchema = z.object({
   mutations: z.array(z.unknown()).min(1).max(PUSH_BATCH_MAX),
 });
 
+/** Flags the server raises on a synced sale for the admin's Needs attention list. */
+export const SALE_FLAGS = ["oversold", "total_mismatch"] as const;
+export type SaleFlag = (typeof SALE_FLAGS)[number];
+
 export type PushOutcome =
-  | { mutationId: string; status: "applied"; flags: string[] }
+  | { mutationId: string; status: "applied"; flags: SaleFlag[] }
   | { mutationId: string; status: "rejected"; error: string };
 
 export interface PushResponse {

@@ -45,12 +45,34 @@ async function enrollmentCode(): Promise<string> {
   return ((await res.json()) as { code: string }).code;
 }
 
+/** Receipt numbers the server has for today, as the admin sees them in Sales activity. */
+async function serverReceipts(): Promise<string[]> {
+  const signIn = await fetch(`${API}/session`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: WEB_ORIGIN },
+    body: JSON.stringify({ username: "admin", password: "admin" }),
+  });
+  const cookie = signIn.headers
+    .getSetCookie()
+    .map((value) => value.split(";")[0])
+    .join("; ");
+  const page = (await (
+    await fetch(`${API}/sales?period=today&pageSize=100`, { headers: { cookie } })
+  ).json()) as { rows: { receiptNo: string }[] };
+  return page.rows.map((row) => row.receiptNo);
+}
+
 async function launch(
   userData: string,
 ): Promise<{ app: ElectronApplication; page: Page; errors: string[] }> {
   const app = await electron.launch({
     args: [join(import.meta.dirname, "../dist/main.mjs")],
-    env: { ...process.env, STEWARD_USER_DATA: userData },
+    env: {
+      ...process.env,
+      STEWARD_USER_DATA: userData,
+      // Linux CI has no keyring for safeStorage; Windows and macOS use the real store.
+      ...(process.platform === "linux" ? { STEWARD_PLAIN_TOKEN_STORE: "1" } : {}),
+    },
   });
   const page = await app.firstWindow();
   const errors: string[] = [];
@@ -79,7 +101,7 @@ async function sellOne(page: Page, query: string) {
   return new RegExp(`OR-NCC-${SERIES}-\\d{6}`).exec(receiptNo)?.[0] ?? "";
 }
 
-test("enroll, sign in offline, sell, and keep everything after a restart", async () => {
+test("enroll, sign in, sell, restart, and the sales reach the server", async () => {
   const userData = await mkdtemp(join(tmpdir(), "steward-e2e-"));
   try {
     let { app, page, errors } = await launch(userData);
@@ -91,10 +113,12 @@ test("enroll, sign in offline, sell, and keep everything after a restart", async
     await page.getByRole("button", { name: "Set up counter" }).click();
 
     // Sign in against the synced password hash; the footer names the counter.
-    // Downloading the branch's data can take a while on a slow machine.
-    await expect(page.getByRole("heading", { name: "Sign in to your counter" })).toBeVisible({
-      timeout: 60_000,
-    });
+    // Downloading the branch's data can take a while on a slow machine. If
+    // enrollment fails, stop here with the message the screen shows.
+    const signInHeading = page.getByRole("heading", { name: "Sign in to your counter" });
+    const enrollError = page.locator("form").getByRole("alert");
+    await expect(signInHeading.or(enrollError)).toBeVisible({ timeout: 60_000 });
+    expect(await enrollError.allTextContents(), "enrollment failed").toEqual([]);
     await expect(
       page.getByText(`Counter ${SERIES} · NCCC Market · Last synced`, { exact: false }),
     ).toBeVisible();
@@ -115,7 +139,10 @@ test("enroll, sign in offline, sell, and keep everything after a restart", async
     await page.getByLabel("Password").fill("pos");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
     await page.waitForURL(/\/pos\/?$/);
-    await expect(page.getByText(/2 (changes|sales) waiting|2 queued/).first()).toBeVisible();
+    // Connected to the server, the counter has already synced both sales.
+    await expect
+      .poll(serverReceipts, { timeout: 30_000 })
+      .toEqual(expect.arrayContaining([`OR-NCC-${SERIES}-000001`, `OR-NCC-${SERIES}-000002`]));
     expect(await sellOne(page, "biogesic")).toBe(`OR-NCC-${SERIES}-000003`);
     expect(errors).toEqual([]);
     await app.close();

@@ -643,3 +643,68 @@ docs/deploy.md (Milestone 14) covers that part of the acceptance:
 
 The same flow runs automatically against the real Electron app in CI (`apps/desktop/e2e`). The
 20-sales restart check runs in the core tests.
+
+## Milestone 12
+
+### Push
+
+`POST /sync/push` (`apps/api/src/services/push-service.ts`) takes up to 50 outbox rows in order.
+Each one is applied in its own transaction and recorded in `sync_mutations`.
+
+- **Repeats.** A repeated `mutationId` gets the original outcome back without being applied
+  again, so a push retried after a lost response creates no duplicates. The outbox row's id is the
+  sale, receipt or request id, so a sale is idempotent by its own id too.
+- **Synced sales.** These go through `applySyncedSale`. The sale already happened, so it's stored
+  with the counter's receipt number, time and amounts as charged.
+  - The server recomputes the totals with the counter's prices and pricing snapshot. A difference
+    sets `total_mismatch`; nothing is rewritten.
+  - Stock is taken FIFO as of the sale time. A shortfall comes out of the batch the counter would
+    have sold next, taking it below zero, and sets `oversold`.
+  - The server keeps the highest receipt number per counter.
+- **Receipts and requests.** These run the normal services as the person who made them. Staff
+  can't receive stock, and requests get their real REQ number. A change for another branch than
+  the counter's is refused.
+- **Refusals.** Unreadable or invalid changes are recorded as `rejected` with a message. An
+  unexpected server error is not recorded; the push fails and the counter retries.
+
+### Needs attention
+
+Refused changes and flagged sales stay in `GET /sync/attention` until an admin marks them resolved
+(audited). They appear in Settings → Devices. Nothing is dropped silently. On the counter, a
+refused change keeps its local copy (the sale did happen) and stops being retried.
+
+### The counter's sync engine
+
+`apps/desktop/src/core/sync-engine.ts` does each run in this order:
+
+1. Push the outbox.
+2. Pull every page.
+3. In one transaction, remove the counter's provisional copy of each applied change. Then apply
+   the pulled rows and delete those outbox rows.
+
+The server may have chosen other batches, flagged an oversell, or numbered a request, so its
+version replaces the counter's. Append-only rows change only here, with `steward.applying_pull` on
+(migration 0002). Pull pages are merged per table before applying, so a parent row that arrived on
+a later page (a person whose account changed) still lands before the rows that point at it.
+
+If two counters created the same new batch number offline, the server's batch id wins. The
+counter repoints its rows and drops its copy.
+
+Sync runs after every local write, every 30 seconds, on resume from sleep, and with exponential
+backoff (up to 5 minutes) while the server can't be reached. The status the shell shows (online,
+syncing, queued, last synced) comes from the engine. A 401 means the counter was revoked: the token
+is cleared and the app shows a full-screen lock. After every pull the signed-in person is
+re-checked, so a deactivated or moved account is signed out on the next contact.
+
+### Online-only work from a counter
+
+When someone signs in on a counter while it can reach the server, the main process also signs in
+to the server with the same credentials. It keeps that session's cookie in memory and forwards
+online-only calls (approvals, settings, dashboard) through the web's RemoteClient. Those requests
+carry `Origin: app://steward`, which the API accepts alongside the web origin; no web page can send
+that origin. Signed in offline, online-only work explains how to reconnect.
+
+### Measured
+
+On a laptop with PGlite on both sides, 1,000 queued sales sync in well under the 60-second target
+(`apps/desktop/src/core/sync.test.ts`). The same test runs in CI.

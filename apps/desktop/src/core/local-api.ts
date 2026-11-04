@@ -87,6 +87,8 @@ export const ONLINE_ONLY_METHODS = [
   "createDevice",
   "renewEnrollmentCode",
   "revokeDevice",
+  "listAttention",
+  "resolveAttention",
 ] as const;
 export type OnlineOnlyMethod = (typeof ONLINE_ONLY_METHODS)[number];
 
@@ -308,6 +310,7 @@ export class LocalApi {
             soldAt: written.soldAt,
             pricing: written.pricing,
             unitPrices: written.unitPrices,
+            totals: written.totals,
           },
           userId,
           at: written.soldAt,

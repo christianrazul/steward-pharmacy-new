@@ -21,6 +21,7 @@ import type {
 import type { DataClient } from "../client";
 import { DataError } from "../errors";
 import type {
+  AttentionItem,
   BatchDetail,
   Branch,
   CsvExport,
@@ -209,5 +210,11 @@ export class LocalClient implements DataClient {
   }
   revokeDevice(id: string): Promise<Device> {
     return this.call("revokeDevice", id);
+  }
+  listAttention(): Promise<AttentionItem[]> {
+    return this.call("listAttention");
+  }
+  resolveAttention(mutationId: string): Promise<void> {
+    return this.call("resolveAttention", mutationId);
   }
 }

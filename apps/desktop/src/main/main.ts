@@ -2,14 +2,22 @@ import { appendFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent, protocol, session } from "electron";
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  type IpcMainInvokeEvent,
+  powerMonitor,
+  protocol,
+  session,
+} from "electron";
 import electronUpdater from "electron-updater";
 
 import { DesktopRuntime, toBridgeError } from "../core/runtime";
 import { openLocalStore } from "../core/store";
 import { APP_ORIGIN, serveApp } from "./protocol";
 import { printSilently } from "./print";
-import { safeTokenStore } from "./token-store";
+import { plainTokenStore, safeTokenStore } from "./token-store";
 
 const here = dirname(fileURLToPath(import.meta.url));
 /** The web build and migrations ship as resources; in development they come from the repo. */
@@ -19,10 +27,12 @@ const MIGRATIONS = app.isPackaged
   ? join(resources, "migrations")
   : join(resources, "packages/db/drizzle");
 
-// End-to-end tests run each launch in its own data folder. Never in an installed app.
+// End-to-end tests run each launch in its own data folder and, on Linux CI
+// without a keyring, keep the token in a plain file. Never in an installed app.
 if (!app.isPackaged && process.env.STEWARD_USER_DATA) {
   app.setPath("userData", process.env.STEWARD_USER_DATA);
 }
+const plainTokens = !app.isPackaged && process.env.STEWARD_PLAIN_TOKEN_STORE === "1";
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -82,7 +92,8 @@ async function start() {
   const dataDir = join(app.getPath("userData"), "data");
   await mkdir(dataDir, { recursive: true });
   const store = await openLocalStore(join(dataDir, "pglite"), MIGRATIONS);
-  const runtime = new DesktopRuntime(store.db, safeTokenStore(dataDir), {
+  const tokens = plainTokens ? plainTokenStore(dataDir) : safeTokenStore(dataDir);
+  const runtime = new DesktopRuntime(store.db, tokens, {
     log: logError,
     onStatus: (status) => {
       mainWindow?.webContents.send("steward:sync-status", status);
@@ -103,6 +114,10 @@ async function start() {
     fromApp(event) ? runtime.enroll(serverUrl, code) : toBridgeError(new Error("Untrusted sender")),
   );
   ipcMain.handle("steward:sync-status", (event) => (fromApp(event) ? runtime.syncStatus() : null));
+  // Back online: sync straight away instead of waiting for the next 30-second tick.
+  powerMonitor.on("resume", () => {
+    runtime.sync?.kick();
+  });
   ipcMain.handle("steward:print", async (event, html: unknown) => {
     if (!fromApp(event) || typeof html !== "string" || html.length > 200_000) {
       return toBridgeError(new Error("Untrusted print request"));
