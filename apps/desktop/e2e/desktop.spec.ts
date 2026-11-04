@@ -67,7 +67,12 @@ async function launch(
 ): Promise<{ app: ElectronApplication; page: Page; errors: string[] }> {
   const app = await electron.launch({
     args: [join(import.meta.dirname, "../dist/main.mjs")],
-    env: { ...process.env, STEWARD_USER_DATA: userData },
+    env: {
+      ...process.env,
+      STEWARD_USER_DATA: userData,
+      // Linux CI has no keyring for safeStorage; Windows and macOS use the real store.
+      ...(process.platform === "linux" ? { STEWARD_PLAIN_TOKEN_STORE: "1" } : {}),
+    },
   });
   const page = await app.firstWindow();
   const errors: string[] = [];
@@ -108,10 +113,12 @@ test("enroll, sign in, sell, restart, and the sales reach the server", async () 
     await page.getByRole("button", { name: "Set up counter" }).click();
 
     // Sign in against the synced password hash; the footer names the counter.
-    // Downloading the branch's data can take a while on a slow machine.
-    await expect(page.getByRole("heading", { name: "Sign in to your counter" })).toBeVisible({
-      timeout: 60_000,
-    });
+    // Downloading the branch's data can take a while on a slow machine. If
+    // enrollment fails, stop here with the message the screen shows.
+    const signInHeading = page.getByRole("heading", { name: "Sign in to your counter" });
+    const enrollError = page.locator("form").getByRole("alert");
+    await expect(signInHeading.or(enrollError)).toBeVisible({ timeout: 60_000 });
+    expect(await enrollError.allTextContents(), "enrollment failed").toEqual([]);
     await expect(
       page.getByText(`Counter ${SERIES} · NCCC Market · Last synced`, { exact: false }),
     ).toBeVisible();

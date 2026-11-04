@@ -23,6 +23,8 @@ export default function EnrollPage() {
   const [serverUrl, setServerUrl] = useState("");
   const [code, setCode] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  /** A failure that isn't about either field, such as this PC being unable to keep the token. */
+  const [formError, setFormError] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -38,16 +40,14 @@ export default function EnrollPage() {
     if (!/^[A-Za-z0-9]{8}$/.test(code.trim()))
       local.code = "Enter the 8-character code from Settings.";
     setErrors(local);
+    setFormError("");
     if (Object.keys(local).length > 0) return;
     setBusy(true);
     const result = await bridge.enroll(serverUrl, code.trim());
     setBusy(false);
     if (!result.ok) {
-      setErrors(
-        Object.keys(result.error.fields).length > 0
-          ? result.error.fields
-          : { code: result.error.message },
-      );
+      if (Object.keys(result.error.fields).length > 0) setErrors(result.error.fields);
+      else setFormError(result.error.message);
       return;
     }
     queryClient.setQueryData(DESKTOP_DEVICE_KEY, result.value);
@@ -102,6 +102,11 @@ export default function EnrollPage() {
               }}
             />
           </Field>
+          {formError !== "" && (
+            <div role="alert" className="mt-3.5 text-[12.5px] text-danger-foreground">
+              {formError}
+            </div>
+          )}
           <Button type="submit" size="lg" className="mt-5 w-full" disabled={busy}>
             {busy ? "Downloading this branch’s data…" : "Set up counter"}
           </Button>
