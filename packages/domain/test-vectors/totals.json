@@ -1,0 +1,129 @@
+{
+  "description": "Shared totals vectors. Every package that computes or re-checks money must pass these exactly (domain, API and desktop tests).",
+  "discounts": {
+    "senior_pwd": {
+      "name": "Senior / PWD",
+      "mode": "percent",
+      "value": 2000,
+      "formula": null,
+      "capCentavos": null,
+      "minSpendCentavos": null,
+      "isVatExempt": true
+    },
+    "employee": {
+      "name": "Employee",
+      "mode": "percent",
+      "value": 1000,
+      "formula": null,
+      "capCentavos": null,
+      "minSpendCentavos": null,
+      "isVatExempt": false
+    }
+  },
+  "vectors": [
+    {
+      "id": 1,
+      "title": "₱112.00 taxable + ₱100.00 non-taxable, inclusive 12%, no discount",
+      "lines": [
+        { "qty": 1, "unitPriceCentavos": 11200, "isTaxable": true },
+        { "qty": 1, "unitPriceCentavos": 10000, "isTaxable": false }
+      ],
+      "settings": { "vatRateBp": 1200, "vatMode": "inclusive" },
+      "discount": null,
+      "expected": {
+        "subtotal": 21200,
+        "discount": 0,
+        "vat": 1200,
+        "vatExemptRemoved": 0,
+        "total": 21200
+      }
+    },
+    {
+      "id": 2,
+      "title": "Same cart, Senior / PWD 20% VAT-exempt",
+      "lines": [
+        { "qty": 1, "unitPriceCentavos": 11200, "isTaxable": true },
+        { "qty": 1, "unitPriceCentavos": 10000, "isTaxable": false }
+      ],
+      "settings": { "vatRateBp": 1200, "vatMode": "inclusive" },
+      "discount": "senior_pwd",
+      "expected": {
+        "subtotal": 21200,
+        "discount": 4000,
+        "vat": 0,
+        "vatExemptRemoved": 1200,
+        "total": 16000
+      }
+    },
+    {
+      "id": 3,
+      "title": "Same cart, Employee 10%",
+      "lines": [
+        { "qty": 1, "unitPriceCentavos": 11200, "isTaxable": true },
+        { "qty": 1, "unitPriceCentavos": 10000, "isTaxable": false }
+      ],
+      "settings": { "vatRateBp": 1200, "vatMode": "inclusive" },
+      "discount": "employee",
+      "expected": {
+        "subtotal": 21200,
+        "discount": 2120,
+        "vat": 1080,
+        "vatExemptRemoved": 0,
+        "total": 19080
+      }
+    },
+    {
+      "id": 4,
+      "title": "Same cart, exclusive 12%, Employee 10%",
+      "lines": [
+        { "qty": 1, "unitPriceCentavos": 11200, "isTaxable": true },
+        { "qty": 1, "unitPriceCentavos": 10000, "isTaxable": false }
+      ],
+      "settings": { "vatRateBp": 1200, "vatMode": "exclusive" },
+      "discount": "employee",
+      "expected": {
+        "subtotal": 21200,
+        "discount": 2120,
+        "vat": 1210,
+        "vatExemptRemoved": 0,
+        "total": 20290
+      }
+    },
+    {
+      "id": 5,
+      "title": "2 × ₱4.50 + 1 × ₱385.00 + 2 × ₱12.00, all taxable, inclusive 12%",
+      "lines": [
+        { "qty": 2, "unitPriceCentavos": 450, "isTaxable": true },
+        { "qty": 1, "unitPriceCentavos": 38500, "isTaxable": true },
+        { "qty": 2, "unitPriceCentavos": 1200, "isTaxable": true }
+      ],
+      "settings": { "vatRateBp": 1200, "vatMode": "inclusive" },
+      "discount": null,
+      "expected": {
+        "subtotal": 41800,
+        "discount": 0,
+        "vat": 4479,
+        "vatExemptRemoved": 0,
+        "total": 41800
+      }
+    },
+    {
+      "id": 6,
+      "title": "Same cart, Senior / PWD 20% VAT-exempt",
+      "lines": [
+        { "qty": 2, "unitPriceCentavos": 450, "isTaxable": true },
+        { "qty": 1, "unitPriceCentavos": 38500, "isTaxable": true },
+        { "qty": 2, "unitPriceCentavos": 1200, "isTaxable": true }
+      ],
+      "settings": { "vatRateBp": 1200, "vatMode": "inclusive" },
+      "discount": "senior_pwd",
+      "expected": {
+        "subtotal": 41800,
+        "discount": 7464,
+        "vat": 0,
+        "vatExemptRemoved": 4479,
+        "total": 29857
+      }
+    }
+  ]
+}
