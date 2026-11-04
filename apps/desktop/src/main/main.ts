@@ -9,7 +9,7 @@ import { DesktopRuntime, toBridgeError } from "../core/runtime";
 import { openLocalStore } from "../core/store";
 import { APP_ORIGIN, serveApp } from "./protocol";
 import { printSilently } from "./print";
-import { safeTokenStore } from "./token-store";
+import { plainTokenStore, safeTokenStore } from "./token-store";
 
 const here = dirname(fileURLToPath(import.meta.url));
 /** The web build and migrations ship as resources; in development they come from the repo. */
@@ -19,10 +19,12 @@ const MIGRATIONS = app.isPackaged
   ? join(resources, "migrations")
   : join(resources, "packages/db/drizzle");
 
-// End-to-end tests run each launch in its own data folder. Never in an installed app.
+// End-to-end tests run each launch in its own data folder and, on Linux CI
+// without a keyring, keep the token in a plain file. Never in an installed app.
 if (!app.isPackaged && process.env.STEWARD_USER_DATA) {
   app.setPath("userData", process.env.STEWARD_USER_DATA);
 }
+const plainTokens = !app.isPackaged && process.env.STEWARD_PLAIN_TOKEN_STORE === "1";
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "app", privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -82,7 +84,8 @@ async function start() {
   const dataDir = join(app.getPath("userData"), "data");
   await mkdir(dataDir, { recursive: true });
   const store = await openLocalStore(join(dataDir, "pglite"), MIGRATIONS);
-  const runtime = new DesktopRuntime(store.db, safeTokenStore(dataDir), {
+  const tokens = plainTokens ? plainTokenStore(dataDir) : safeTokenStore(dataDir);
+  const runtime = new DesktopRuntime(store.db, tokens, {
     log: logError,
     onStatus: (status) => {
       mainWindow?.webContents.send("steward:sync-status", status);

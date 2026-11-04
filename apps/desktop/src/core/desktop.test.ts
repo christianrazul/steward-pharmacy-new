@@ -112,6 +112,28 @@ describe("enrollment and offline sign-in", () => {
     expect(counter.tokens.value).not.toBeNull();
   });
 
+  it("refuses to enroll before spending the code when the PC can't keep a token", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "steward-desktop-"));
+    dirs.push(dir);
+    const store = await openLocalStore(dir, MIGRATIONS_FOLDER);
+    const code = await newCode(branchId(), "39");
+    const input = { serverUrl: "http://localhost:4000", code };
+    const noKeyring: TokenStore = {
+      ...memoryTokens(),
+      assertWritable() {
+        throw new Error("No keyring");
+      },
+    };
+    await expect(enrollDevice(store.db, noKeyring, input, apiFetch())).rejects.toThrow(
+      "No keyring",
+    );
+    // The code is still good once the PC can keep the token.
+    await expect(enrollDevice(store.db, memoryTokens(), input, apiFetch())).resolves.toMatchObject({
+      receiptSeries: "39",
+    });
+    await store.close();
+  });
+
   it("signs staff in against the synced password hash, only at their own branch", async () => {
     const session = await counter.api.call("signIn", [{ username: "cashier1", password: "pos" }]);
     expect(session).toMatchObject({ user: { username: "cashier1" } });

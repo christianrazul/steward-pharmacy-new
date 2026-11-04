@@ -11,6 +11,8 @@ export interface TokenStore {
   read(): Promise<string | null>;
   write(token: string): Promise<void>;
   clear(): Promise<void>;
+  /** Throws if this PC can't keep a token. Checked before the one-time code is spent. */
+  assertWritable?(): void;
 }
 
 /**
@@ -55,6 +57,7 @@ export async function enrollDevice(
   fetchImpl: typeof fetch = fetch,
 ): Promise<DeviceIdentity> {
   const serverUrl = normalizeServerUrl(input.serverUrl);
+  tokens.assertWritable?.();
   const enrolled = await enroll(serverUrl, input.code, fetchImpl);
   await tokens.write(enrolled.token);
   const device: DeviceIdentity = enrolled.device;
