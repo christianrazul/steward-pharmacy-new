@@ -1,3 +1,3 @@
-import { baseConfig } from "@steward/config/eslint/base";
+import { reactConfig } from "@steward/config/eslint/react";
 
-export default baseConfig(import.meta.dirname);
+export default reactConfig(import.meta.dirname);
