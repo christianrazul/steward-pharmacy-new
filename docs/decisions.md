@@ -382,5 +382,48 @@ reaches the API at `/api` on the same site, through Caddy.
 
 ### Writes during the milestone stack
 
-`RemoteClient` write methods are connected as their routes land in Milestones 6 to 9. Until then
+`RemoteClient` write methods are connected as their routes land in Milestones 6 to 9 (settings in 6). Until then
 they return a clear "not connected yet" error.
+
+## Milestone 6
+
+### Settings are online-only
+
+Settings, branches, staff accounts, discounts and devices change only through the API, and only
+for admins (`settings.manage`, checked in every service). Desktops treat them as read-only data
+that sync pulls; the server always wins. Each change writes an `audit_log` row in the same
+transaction. Audit rows never hold passwords, enrollment codes or tokens; staff rows record
+whether a phone or email exists rather than the values.
+
+### Deletes are soft
+
+Branches, staff accounts and discounts get `deleted_at` instead of being removed, because past
+sales, stock movements and requests point at them. Removing a branch moves its staff to central
+and revokes its devices. Central can't be removed. Deleting a staff account also deactivates it
+and ends its sessions.
+
+### Snapshots keep history stable
+
+Sales store their own discount label, amounts and pricing settings, so editing a discount or the
+VAT rate changes only future sales. A test edits the Senior / PWD rule and checks an old receipt
+is unchanged.
+
+### Ending sessions
+
+Deactivating an account, deleting it, or setting a new password deletes all of that person's
+sessions, so they are signed out on their next request. Admin accounts can't be deactivated or
+deleted from Settings, and admins can't deactivate themselves.
+
+### Device enrollment
+
+Adding a device returns an 8-character code from an alphabet without look-alike characters (no 0,
+O, 1 or I). Only its SHA-256 hash is stored. The code expires after 15 minutes and works once.
+An admin can issue a new code until the device is revoked. Receipt series are unique per branch
+among devices that aren't revoked. Revoking a device clears its token hash and pending code. A
+revoked device is never re-enabled; add it again as a new device.
+
+### Schemas accept their own output
+
+Forms validate with the domain schemas and send the parsed value; the API validates it again.
+Optional text fields (email, address, PRC license) accept `null` as well as blank text, so a
+parsed value parses again unchanged. A domain test covers this.

@@ -240,6 +240,15 @@ describe("settings, branches, staff, discounts, devices", () => {
     });
   });
 
+  it("parses its own output again unchanged, so the server can re-check what a form sent", () => {
+    const parsed = staffCreateSchema.parse({ ...staff, email: "Jo@Example.com" });
+    expect(staffCreateSchema.parse(parsed)).toEqual(parsed);
+    expect(staffCreateSchema.parse({ ...staff, email: null, address: null })).toMatchObject({
+      email: null,
+      address: null,
+    });
+  });
+
   it("lets edits keep the current password", () => {
     const { username: _username, ...update } = staff;
     expect(

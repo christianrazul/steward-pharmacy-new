@@ -111,6 +111,19 @@ test.describe("every screen as admin", () => {
     await dialog.getByRole("button", { name: "Add discount" }).click();
     await expect(dialog.getByText('Unknown name "price".').first()).toBeVisible();
   });
+
+  test("settings adds a device and shows its one-time code", async ({ page }) => {
+    await page.goto("/settings?tab=devices");
+    await page.getByRole("button", { name: "Add device" }).click();
+    const dialog = page.getByRole("dialog", { name: "Add device" });
+    await dialog.getByLabel("Name").fill("Counter 7");
+    await dialog.getByLabel("Receipt series").fill("07");
+    await dialog.getByRole("button", { name: "Add device" }).click();
+    const code = page.getByRole("dialog", { name: "Enroll Counter 7" });
+    await expect(code.getByLabel("Enrollment code")).toHaveText(/^[A-Z2-9]{8}$/);
+    await code.getByRole("button", { name: "Done" }).click();
+    await expect(page.getByRole("row", { name: /Counter 7/ })).toContainText("Waiting to enroll");
+  });
 });
 
 test.describe("every screen as staff", () => {

@@ -313,46 +313,48 @@ export class RemoteClient implements DataClient {
   fulfillRequest(_id: string): Promise<StockRequestDetail> {
     return this.notYet();
   }
-  updateSettings(_input: SettingsInput): Promise<Settings> {
-    return this.notYet();
+  // -- settings (admins) ----------------------------------------------------
+
+  updateSettings(input: SettingsInput): Promise<Settings> {
+    return this.call(() => this.api.settings.$put({ json: input }));
   }
-  createBranch(_input: BranchInput): Promise<Branch> {
-    return this.notYet();
+  createBranch(input: BranchInput): Promise<Branch> {
+    return this.call(() => this.api.branches.$post({ json: input }));
   }
-  updateBranch(_id: string, _input: BranchInput): Promise<Branch> {
-    return this.notYet();
+  updateBranch(id: string, input: BranchInput): Promise<Branch> {
+    return this.call(() => this.api.branches[":id"].$put({ param: { id }, json: input }));
   }
-  deleteBranch(_id: string): Promise<void> {
-    return this.notYet();
+  async deleteBranch(id: string): Promise<void> {
+    await this.call(() => this.api.branches[":id"].$delete({ param: { id } }));
   }
-  createStaff(_input: StaffCreateInput): Promise<StaffAccount> {
-    return this.notYet();
+  createStaff(input: StaffCreateInput): Promise<StaffAccount> {
+    return this.call(() => this.api.staff.$post({ json: input }));
   }
-  updateStaff(_id: string, _input: StaffUpdateInput): Promise<StaffAccount> {
-    return this.notYet();
+  updateStaff(id: string, input: StaffUpdateInput): Promise<StaffAccount> {
+    return this.call(() => this.api.staff[":id"].$put({ param: { id }, json: input }));
   }
-  setStaffActive(_id: string, _active: boolean): Promise<StaffAccount> {
-    return this.notYet();
+  setStaffActive(id: string, active: boolean): Promise<StaffAccount> {
+    return this.call(() => this.api.staff[":id"].active.$put({ param: { id }, json: { active } }));
   }
-  deleteStaff(_id: string): Promise<void> {
-    return this.notYet();
+  async deleteStaff(id: string): Promise<void> {
+    await this.call(() => this.api.staff[":id"].$delete({ param: { id } }));
   }
-  createDiscount(_input: DiscountInput): Promise<Discount> {
-    return this.notYet();
+  createDiscount(input: DiscountInput): Promise<Discount> {
+    return this.call(() => this.api.discounts.$post({ json: input }));
   }
-  updateDiscount(_id: string, _input: DiscountInput): Promise<Discount> {
-    return this.notYet();
+  updateDiscount(id: string, input: DiscountInput): Promise<Discount> {
+    return this.call(() => this.api.discounts[":id"].$put({ param: { id }, json: input }));
   }
-  deleteDiscount(_id: string): Promise<void> {
-    return this.notYet();
+  async deleteDiscount(id: string): Promise<void> {
+    await this.call(() => this.api.discounts[":id"].$delete({ param: { id } }));
   }
-  createDevice(_input: DeviceCreateInput): Promise<DeviceEnrollment> {
-    return this.notYet();
+  createDevice(input: DeviceCreateInput): Promise<DeviceEnrollment> {
+    return this.call(() => this.api.devices.$post({ json: input }));
   }
-  renewEnrollmentCode(_id: string): Promise<DeviceEnrollment> {
-    return this.notYet();
+  renewEnrollmentCode(id: string): Promise<DeviceEnrollment> {
+    return this.call(() => this.api.devices[":id"]["enrollment-code"].$post({ param: { id } }));
   }
-  revokeDevice(_id: string): Promise<Device> {
-    return this.notYet();
+  revokeDevice(id: string): Promise<Device> {
+    return this.call(() => this.api.devices[":id"].revoke.$post({ param: { id } }));
   }
 }
