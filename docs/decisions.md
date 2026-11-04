@@ -330,3 +330,57 @@ its own throwaway database.
 
 `docker-compose.dev.yml` reads `POSTGRES_PORT` (default 5432), for machines that already run a
 Postgres on 5432.
+
+## Milestone 5
+
+### API shape
+
+- Routes are thin. They validate input with the shared Zod schemas (`http/validate.ts`), build a
+  `ServiceContext` and call a service in `apps/api/src/services`. Services do every permission
+  check.
+- Errors leave the API as `{ error: { code, message, fields } }`. `code` is the same set the
+  DataClient uses, and `message` is written for people.
+- The route chain is typed end to end. `@steward/data`'s `RemoteClient` uses the Hono RPC client
+  with `AppType` from `@steward/api/app-type` (a type-only dependency).
+- View models moved from `@steward/data` to `@steward/domain/view-models`, so the API can return
+  them without depending on `@steward/data`. Turborepo rejects circular workspace dependencies.
+
+### Authentication
+
+- Better Auth with the username plugin, the Drizzle adapter on our own tables, database sessions
+  (12 hours, refreshed hourly) and argon2id through its `password.hash` and `password.verify`
+  hooks. Sign-up is disabled: admins create accounts.
+- Better Auth's HTTP handler is never mounted. Our routes (`GET`/`POST`/`DELETE /session`) call
+  its server API so they can add what it does not do on its own:
+  - a 5-minute lockout after 5 failed tries for a username (`sign_in_attempts`), plus an
+    in-memory per-IP limit on the sign-in route;
+  - refusing inactive accounts with the mockup's message (shown only after a correct password,
+    so the response does not reveal whether a username exists).
+- Every request re-reads the user from the database, so deactivating or deleting someone takes
+  effect immediately. Deactivation also deletes their sessions (Milestone 6).
+- Cookies: `steward.session_token`, httpOnly, SameSite=Lax, Secure in production.
+
+### CSRF
+
+Cookie-authenticated writes must come from `WEB_ORIGIN` (the `Origin` header), on top of
+SameSite=Lax. Device requests use a bearer token and are exempt.
+
+### Permissions
+
+`authorize(actor, action, { branchId })` (`apps/api/src/auth/permissions.ts`) combines the role
+map from `@steward/domain` with branch scoping. For list queries, `scopedBranch` ignores the
+branch a staff user asks for and always uses theirs. Tests call the API directly to prove staff
+cannot read another branch's stock, sales or requests, or open admin data.
+
+### Web data source
+
+`NEXT_PUBLIC_DATA_SOURCE` picks the client: `remote` (default, the API) or `fake` (in-memory demo
+data, used by the fast UI test suite and for working without a backend).
+`NEXT_PUBLIC_DEPLOY_ENV=production` makes the build fail if the dev role switcher or fake data
+is turned on, which keeps the role switcher out of production builds. In production the web
+reaches the API at `/api` on the same site, through Caddy.
+
+### Writes during the milestone stack
+
+`RemoteClient` write methods are connected as their routes land in Milestones 6 to 9. Until then
+they return a clear "not connected yet" error.

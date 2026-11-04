@@ -13,9 +13,18 @@
   },
   "dependencies": {
     "@hono/node-server": "2.1.4",
+    "@hono/zod-validator": "0.9.1",
+    "@node-rs/argon2": "2.2.2",
+    "@steward/db": "workspace:*",
     "@steward/domain": "workspace:*",
+    "better-auth": "1.7.7",
+    "date-fns": "4.4.0",
+    "date-fns-tz": "3.2.0",
+    "drizzle-orm": "0.45.4",
     "hono": "4.13.13",
     "pino": "10.4.0",
+    "postgres": "3.4.9",
+    "uuid": "14.0.3",
     "zod": "4.6.5"
   },
   "devDependencies": {
@@ -27,5 +36,9 @@
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "vitest": "5.0.3"
+  },
+  "exports": {
+    "./app-type": "./src/app-type.ts",
+    "./testing": "./src/testing/test-app.ts"
   }
 }

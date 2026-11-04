@@ -449,10 +449,12 @@ export const requestListQuerySchema = z.object({
 export type RequestListQuery = z.infer<typeof requestListQuerySchema>;
 
 /** First error message per field, for forms. */
-export function fieldErrors(error: z.ZodError): Record<string, string> {
+export function fieldErrors(error: {
+  issues: readonly { path: readonly PropertyKey[]; message: string }[];
+}): Record<string, string> {
   const result: Record<string, string> = {};
   for (const issue of error.issues) {
-    const key = issue.path.join(".") || "_form";
+    const key = issue.path.map(String).join(".") || "_form";
     result[key] ??= issue.message;
   }
   return result;

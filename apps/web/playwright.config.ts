@@ -23,6 +23,8 @@ export default defineConfig({
       PORT: String(PORT),
       NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000",
       NEXT_PUBLIC_DEV_ROLE_SWITCHER: "true",
+      // The UI suite runs on in-memory demo data; full-stack tests start the API themselves.
+      NEXT_PUBLIC_DATA_SOURCE: "fake",
     },
   },
 });

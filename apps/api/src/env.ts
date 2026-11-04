@@ -7,6 +7,10 @@ const envSchema = z.object({
     .url({ protocol: /^postgres(ql)?$/ })
     .describe("Postgres connection string, for example postgres://user:pass@host:5432/db"),
   WEB_ORIGIN: z.url({ protocol: /^https?$/ }),
+  /** Where browsers reach this API (used for auth callbacks and cookie security). */
+  PUBLIC_API_URL: z.url({ protocol: /^https?$/ }).default("http://localhost:4000"),
+  /** Signs session cookies. At least 32 random characters; generate with `openssl rand -base64 32`. */
+  BETTER_AUTH_SECRET: z.string().min(32, "must be at least 32 characters"),
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
 });
 
