@@ -33,3 +33,4 @@ blob-report/
 
 # Agent guidance files written by turbo and next dev
 AGENTS.md
+apps/desktop/release/

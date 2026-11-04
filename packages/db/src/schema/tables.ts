@@ -608,6 +608,8 @@ export const outbox = pgTable(
     mutationId: uuid("mutation_id").primaryKey(),
     type: text("type").notNull(),
     payload: jsonb("payload").notNull(),
+    /** Who did it on the counter; the server checks they belong to the device's branch. */
+    userId: uuid("user_id").notNull(),
     createdAt: timestamptz("created_at").notNull().defaultNow(),
     attempts: integer("attempts").notNull().default(0),
     lastError: text("last_error"),

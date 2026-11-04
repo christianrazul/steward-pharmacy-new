@@ -18,6 +18,7 @@
     "@node-rs/argon2": "2.2.2",
     "@steward/db": "workspace:*",
     "@steward/domain": "workspace:*",
+    "@steward/sync": "workspace:*",
     "better-auth": "1.7.7",
     "date-fns": "4.4.0",
     "date-fns-tz": "3.2.0",
@@ -40,6 +41,7 @@
   },
   "exports": {
     "./app-type": "./src/app-type.ts",
-    "./testing": "./src/testing/test-app.ts"
+    "./testing": "./src/testing/test-app.ts",
+    "./services": "./src/services/index.ts"
   }
 }

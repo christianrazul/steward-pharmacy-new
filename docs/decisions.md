@@ -555,3 +555,91 @@ run them as formulas.
 ### Test clock
 
 `createTestApp` has `setNow`, so tests can record sales at exact moments.
+
+## Milestone 11
+
+### One service layer, two databases
+
+The counter doesn't have its own copy of the business logic. Its main process imports the API's
+services (`@steward/api/services`) and runs them against its local PGlite database, with the
+signed-in person as the actor. A sale offline goes through the same `createSale` as on the web:
+same totals, FIFO, expiry and permission checks. The shared totals vectors pass on the counter
+too (`apps/desktop/src/core/desktop.test.ts`). Arguments from the renderer are parsed with the
+same Zod schemas the API's routes use, because IPC is a trust boundary too.
+
+The three offline writes take small hooks, so the counter can use its own receipt numbers and add
+an outbox row in the same transaction:
+
+- `sale.create`: receipts use the device's series and a gapless local counter, for example
+  OR-NCC-01-000001.
+- `stock.receive`: the counter picks the new batch's id (`batchId`), so the server creates the same
+  batch on sync.
+- `stock_request.create`: the counter gives a provisional number such as `REQ-010001` until the
+  server assigns a REQ number.
+
+Each outbox row's id is the sale, receipt or request id, so "synced" means no outbox row.
+
+### Admin work stays online
+
+Approving requests, settings, accounts, devices, the dashboard and CSV export are online-only on
+the counter. For now they say so and point to the web app. Milestone 12 forwards them to the
+server when connected.
+
+### Enrollment and the initial snapshot
+
+`POST /devices/enroll` swaps the one-time code for a long-lived token (32 random bytes). The server
+stores only its SHA-256; the counter keeps it encrypted with Electron safeStorage (Windows DPAPI).
+The CSRF check skips this path because it uses no cookies.
+
+The counter then pulls its snapshot from `GET /sync/pull` (built here because enrollment needs it;
+Milestone 12 adds push and the background worker). Every page is fetched first, then all of them
+are applied in one transaction, so the counter never shows half a sync.
+
+What a counter receives:
+
+- **Everyone.** The catalog, discounts, settings and branches.
+- **Every user's name, role, branch and active flag.** A person moved or deactivated elsewhere is
+  locked out offline.
+- **Its own branch only.** Password hashes, devices, batches, movements, sales and requests.
+- **Never.** Contact details or addresses (data minimization under RA 10173).
+
+Moving a person to another branch re-stamps their password row, so the new branch's counters pull
+it.
+
+### Offline sign-in
+
+Passwords are checked against the synced argon2id hash. Only people active and assigned to the
+counter's branch at the last sync can sign in. Five failed tries lock the username on that counter
+for five minutes. The sign-in screen shows the counter, branch and last sync time.
+
+### Electron security
+
+- **Renderer.** `contextIsolation` on, `nodeIntegration` off, sandboxed, with a preload that exposes
+  six typed functions (`window.stewardDesktop`). IPC is accepted only from `app://steward` pages.
+- **Navigation.** Pop-ups are denied, and navigating away from the app is blocked. Every
+  permission request (camera and so on) is refused.
+- **Serving the UI.** The web build is served over a privileged `app://` scheme with a strict CSP.
+  Scripts come only from the app plus the SHA-256 of each inline script in that page (Next.js
+  inlines its bootstrap data), and `connect-src 'self'`. The renderer never talks to the network;
+  the main process does.
+- **Printing.** Receipts print silently through a hidden window with JavaScript disabled, at the
+  counter's paper width.
+
+### Packaging
+
+electron-builder makes an NSIS installer (per machine, x64). argon2's native binding is a
+platform-specific package that pnpm doesn't hoist, so the desktop's `package.json` lists the
+Windows binding (and macOS, for local testing) as optional dependencies. Without that, the
+installed app fails at start-up. The bundled main process is ESM (Electron supports it); the
+preload is CommonJS, which Electron's sandbox requires. CI builds the unsigned installer on
+Windows. Signing and the update feed come in Milestone 14.
+
+The NSIS installer can't be tested on a clean Windows 11 PC from here. The pilot checklist in
+docs/deploy.md (Milestone 14) covers that part of the acceptance:
+
+1. Install, then enroll.
+2. Disconnect the network and make 20 sales.
+3. Restart and check that the sales, stock and outbox are intact.
+
+The same flow runs automatically against the real Electron app in CI (`apps/desktop/e2e`). The
+20-sales restart check runs in the core tests.

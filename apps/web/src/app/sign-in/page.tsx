@@ -18,6 +18,8 @@ import { useDataClient } from "@/data/provider";
 import { env } from "@/env";
 import { DEMO_ACCOUNTS } from "@/lib/demo-accounts";
 import { errorMessage } from "@/lib/errors";
+import { useDesktopDevice } from "@/lib/desktop";
+import { relativeTime } from "@/lib/format";
 import { homePathFor } from "@/lib/session";
 import { useBranchStore } from "@/stores/branch-store";
 
@@ -29,6 +31,7 @@ export default function SignInPage() {
   const queryClient = useQueryClient();
   const session = useSession();
   const setWorkingBranchId = useBranchStore((state) => state.setWorkingBranchId);
+  const device = useDesktopDevice();
   const form = useForm<SignInInput>({
     resolver: zodResolver(signInSchema),
     defaultValues: { username: "", password: "" },
@@ -132,7 +135,19 @@ export default function SignInPage() {
           )}
         </div>
         <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
-          <StatusDot online className="size-[7px]" /> Cloud sync available · works offline
+          {device.data ? (
+            <>
+              <StatusDot online={device.data.lastSyncedAt !== null} className="size-[7px]" />
+              {device.data.label} · {device.data.branchName} ·{" "}
+              {device.data.lastSyncedAt
+                ? `Last synced ${relativeTime(device.data.lastSyncedAt)}`
+                : "Not synced yet"}
+            </>
+          ) : (
+            <>
+              <StatusDot online className="size-[7px]" /> Cloud sync available · works offline
+            </>
+          )}
         </div>
       </div>
       <div

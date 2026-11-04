@@ -36,8 +36,9 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": [
-      "esbuild",
-      "@node-rs/argon2"
+      "@node-rs/argon2",
+      "electron",
+      "esbuild"
     ]
   }
 }

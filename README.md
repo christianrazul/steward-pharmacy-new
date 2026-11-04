@@ -88,11 +88,31 @@ Rules that keep the code honest:
 ## Data
 
 Screens read and write through the `DataClient` interface (`packages/data`), using the TanStack
-Query hooks in `apps/web/src/data/hooks.ts`. Until the API is connected (Milestone 5) the web app
-uses `FakeDataClient`, an in-memory copy of the mockup's data (387 products, four branches, a
-month of sales) that follows the same rules and permission checks as the real backend.
+Query hooks in `apps/web/src/data/hooks.ts`. There are three implementations:
+
+- `RemoteClient`: the API, on the web (default).
+- `LocalClient`: the counter's own database, inside the desktop app (picked automatically).
+- `FakeDataClient`: in-memory demo data with the same rules and permission checks, used by the UI
+  tests and with `NEXT_PUBLIC_DATA_SOURCE=fake`.
 
 Demo accounts: `admin` / `admin` (super admin) and `cashier1` / `pos` (cashier at NCCC Market).
+
+## Desktop app
+
+`apps/desktop` is the Windows counter app: Electron loading the same static web build, with PGlite
+in the main process and the API's own service layer running against it, so offline sales follow
+the server's rules exactly.
+
+```bash
+pnpm --filter @steward/web build       # the UI the app loads
+pnpm --filter @steward/desktop dev     # build the main process and start Electron
+pnpm --filter @steward/desktop test:e2e:desktop   # drive the real app with Playwright
+pnpm --filter @steward/desktop package --win      # NSIS installer in apps/desktop/release (on Windows)
+```
+
+On first launch, the app asks for the server address and a one-time code. An admin creates the
+code in Settings → Devices; it expires after 15 minutes. The app then downloads its branch's data.
+After that, staff sign in with their usual username and password, even with no internet.
 
 ## Design system
 
@@ -111,5 +131,7 @@ the default and dark applies under `<html data-theme="dark">`. Import components
 ## CI
 
 GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs install, format check,
-lint, typecheck, unit tests and build on every push to `main` and on pull requests, plus the
-Playwright end-to-end tests in a separate job. End-to-end tests fail on any browser console error.
+lint, typecheck, unit tests and build on every push to `main` and on pull requests. A second job
+runs the Playwright suites: UI on demo data, full stack against the real API, and the Electron app.
+A third job builds the Windows installer as an artifact. End-to-end tests fail on any console
+error.

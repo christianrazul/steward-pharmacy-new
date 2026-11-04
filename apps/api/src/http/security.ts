@@ -5,12 +5,20 @@ import { forbidden, AppError } from "./errors";
 /**
  * CSRF protection for cookie-authenticated writes. Session cookies are
  * SameSite=Lax; on top of that, state-changing requests must come from the web
- * app's origin. Device requests (bearer token, no cookies) are exempt.
+ * app's origin. Device requests (bearer token, no cookies) and the listed
+ * cookieless paths (device enrollment) are exempt.
  */
-export function requireSameOrigin(webOrigin: string): MiddlewareHandler {
+export function requireSameOrigin(
+  webOrigin: string,
+  cookielessPaths: readonly string[] = [],
+): MiddlewareHandler {
   return async (c, next) => {
     const method = c.req.method;
-    const unsafe = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
+    const unsafe =
+      method !== "GET" &&
+      method !== "HEAD" &&
+      method !== "OPTIONS" &&
+      !cookielessPaths.includes(c.req.path);
     const usesBearer = c.req.header("authorization")?.startsWith("Bearer ") === true;
     if (unsafe && !usesBearer) {
       const origin = c.req.header("origin");

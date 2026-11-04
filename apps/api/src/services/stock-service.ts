@@ -58,6 +58,7 @@ async function resultFor(
 export async function receiveStock(
   ctx: ServiceContext,
   raw: StockReceiveInput,
+  options: { afterWrite?: (tx: Db, input: StockReceiveInput) => Promise<void> } = {},
 ): Promise<ReceiveStockResult> {
   const user = authorize(ctx.actor, "inventory.add_stock", { branchId: raw.branchId });
   const now = ctx.now();
@@ -127,7 +128,7 @@ export async function receiveStock(
     await tx
       .insert(schema.batches)
       .values({
-        id: uuidv7(),
+        id: input.batchId ?? uuidv7(),
         productId,
         branchId: input.branchId,
         batchNo: input.batchNo,
@@ -175,6 +176,7 @@ export async function receiveStock(
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
     });
+    await options.afterWrite?.(tx, input);
     return resultFor(
       tx,
       { productId, branchId: input.branchId, qty: input.qty },

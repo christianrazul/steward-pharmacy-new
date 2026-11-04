@@ -78,6 +78,11 @@ async function addEvent(
 export async function createRequest(
   ctx: ServiceContext,
   raw: StockRequestCreateInput,
+  options: {
+    /** Request number inside the transaction. Default: the next REQ number. Devices use a provisional one. */
+    requestNo?: (tx: Db) => Promise<string>;
+    afterWrite?: (tx: Db, input: StockRequestCreateInput) => Promise<void>;
+  } = {},
 ): Promise<StockRequestSummary> {
   const user = authorize(ctx.actor, "stock_requests.create", { branchId: raw.branchId });
   const input = parseOrInvalid(stockRequestCreateSchema, raw);
@@ -105,7 +110,9 @@ export async function createRequest(
     if (found.length !== productIds.length)
       throw notFound("One of these products no longer exists.");
 
-    const requestNo = formatRequestNo(await nextRequestSequence(tx));
+    const requestNo = options.requestNo
+      ? await options.requestNo(tx)
+      : formatRequestNo(await nextRequestSequence(tx));
     await tx.insert(schema.stockRequests).values({
       id: input.id,
       requestNo,
@@ -139,6 +146,7 @@ export async function createRequest(
       entityId: input.id,
       after: { requestNo, branchId: input.branchId, priority: input.priority, items: input.items },
     });
+    await options.afterWrite?.(tx, input);
   });
 
   const list = await listRequests(ctx, { branchId: input.branchId, status: "all" });

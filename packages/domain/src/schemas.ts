@@ -151,6 +151,11 @@ export const stockReceiveSchema = z
       z.object({ kind: z.literal("new"), productId: idSchema, details: newProductSchema }),
     ]),
     branchId: idSchema,
+    /**
+     * Id for the batch if this receipt creates one. Counters send it so the
+     * server creates the same batch id they did offline; the web leaves it out.
+     */
+    batchId: idSchema.optional(),
     batchNo: z
       .string()
       .trim()
