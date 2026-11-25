@@ -634,6 +634,13 @@ installed app fails at start-up. The bundled main process is ESM (Electron suppo
 preload is CommonJS, which Electron's sandbox requires. CI builds the unsigned installer on
 Windows. Signing and the update feed come in Milestone 14.
 
+The installer is a short guided one: Welcome (its button reads Install), progress, then Finish
+with "Open Steward Pharmacy now" ticked. There are no folder or per-user choices, and updates skip
+the welcome page. Uninstalling keeps the counter's data in AppData. The wording lives in
+`apps/desktop/build/installer.nsh`. The icon, sidebar and header art are rendered from the brand
+logo by `scripts/installer-art.mjs` (`pnpm --filter @steward/desktop installer:art`) and committed,
+so the Windows job needs no browser.
+
 The NSIS installer can't be tested on a clean Windows 11 PC from here. The pilot checklist in
 docs/deploy.md (Milestone 14) covers that part of the acceptance:
 
