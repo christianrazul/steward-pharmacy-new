@@ -110,8 +110,23 @@ export interface SaleWriteOptions {
       soldAt: string;
       unitPrices: Record<string, number>;
       pricing: { vatRateBp: number; vatMode: "inclusive" | "exclusive" };
+      totals: SyncedTotals;
     },
   ) => Promise<void>;
+}
+
+/** The amounts a sale stored, as a counter sends them on sync. */
+export interface SyncedTotals {
+  subtotal: number;
+  discount: number;
+  vat: number;
+  vatable: number;
+  nonVat: number;
+  vatExemptRemoved: number;
+  total: number;
+  itemCount: number;
+  discountLabel: string | null;
+  isVatExemptSale: boolean;
 }
 
 export async function createSale(
@@ -296,6 +311,18 @@ export async function createSale(
         allocations.map(({ product }) => [product.id, product.priceCentavos]),
       ),
       pricing: { vatRateBp: settings.vatRateBp, vatMode: settings.vatMode },
+      totals: {
+        subtotal: totals.subtotal,
+        discount: totals.discount,
+        vat: totals.vat,
+        vatable: totals.vatable,
+        nonVat: totals.nonVat,
+        vatExemptRemoved: totals.vatExemptRemoved,
+        total: totals.total,
+        itemCount: totals.itemCount,
+        discountLabel: saleDiscountLabel(discount, totals),
+        isVatExemptSale: totals.isVatExemptSale,
+      },
     });
     return input.id;
   });

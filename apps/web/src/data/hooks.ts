@@ -31,6 +31,7 @@ export const keys = {
   sale: (id: string) => ["sale", id] as const,
   staff: ["staff"] as const,
   devices: ["devices"] as const,
+  attention: ["attention"] as const,
 };
 
 /** Everything that depends on stock or sales; refreshed after any stock-changing write. */
@@ -174,6 +175,11 @@ export function useStaff() {
 export function useDevices() {
   const client = useDataClient();
   return useQuery({ queryKey: keys.devices, queryFn: () => client.listDevices() });
+}
+
+export function useAttention() {
+  const client = useDataClient();
+  return useQuery({ queryKey: keys.attention, queryFn: () => client.listAttention() });
 }
 
 /**

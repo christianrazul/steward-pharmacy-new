@@ -58,6 +58,7 @@ import type { z } from "zod";
 import type { DataClient } from "../client";
 import { DataError } from "../errors";
 import type {
+  AttentionItem,
   BatchDetail,
   Branch,
   CsvExport,
@@ -1614,5 +1615,18 @@ export class FakeDataClient implements DataClient {
     row.revokedAt = this.now().toISOString();
     row.code = null;
     return this.toDevice(row);
+  }
+
+  /** The demo has no counters syncing, so nothing needs attention. */
+  async listAttention(): Promise<AttentionItem[]> {
+    await this.tick();
+    this.requireAction("settings.manage");
+    return [];
+  }
+
+  async resolveAttention(_mutationId: string): Promise<void> {
+    await this.tick();
+    this.requireAction("settings.manage");
+    throw new DataError("not_found", "That item was already resolved.");
   }
 }

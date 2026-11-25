@@ -3,6 +3,8 @@ import { SYNC_TABLES, type PullResponse, type SyncRow, type SyncTable } from "@s
 import { getTableColumns, sql, type SQL } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 
+import { mergeDuplicateBatches } from "./rebase";
+
 /** Drizzle table for each synced table name. */
 const TABLES: Record<SyncTable, PgTable> = {
   branches: schema.branches,
@@ -76,6 +78,7 @@ export async function applyChanges(tx: Db, changes: PullResponse["changes"]): Pr
     if (!rows || rows.length === 0) continue;
     const table = TABLES[name];
     const columns = getTableColumns(table);
+    if (name === "batches") await mergeDuplicateBatches(tx, rows);
     for (let i = 0; i < rows.length; i += 200) {
       const chunk = rows.slice(i, i + 200).map((row) => {
         const values = toInsertable(name, row);

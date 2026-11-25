@@ -49,6 +49,7 @@ import { useBranches, useDataMutation, useDevices } from "@/data/hooks";
 import { errorMessage } from "@/lib/errors";
 import { dateTime, relativeTime } from "@/lib/format";
 import { applyServerErrors, validateWith } from "@/lib/forms";
+import { AttentionPanel } from "./attention-panel";
 import { SettingsToolbar } from "./settings-row";
 
 interface FormValues {
@@ -84,6 +85,7 @@ export function DeviceSettings() {
 
   return (
     <div>
+      <AttentionPanel />
       <SettingsToolbar
         text="Each counter PC runs the desktop app and keeps selling when the internet drops."
         action={

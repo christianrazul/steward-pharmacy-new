@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e:desktop": "playwright test",
-    "package": "node build.mjs && electron-builder"
+    "package": "node build.mjs && electron-builder",
+    "installer:art": "node scripts/installer-art.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.8",
